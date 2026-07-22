@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PostureTuner — Postawa, Tuner, Metronom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wood-dark:#1B130E;
+    --wood-mid:#3A2A1E;
+    --panel:#1E2226;
+    --panel-2:#2E3538;
+    --cream:#FFFFFF;
+    --gold:#C56A3B;
+    --active-text:#1A1310;
+    --ok:#3ECF7E;
+    --ok-bg:rgba(62,207,126,0.16);
+    --bad:#F2564A;
+    --bad-bg:rgba(242,86,74,0.16);
+    --ink:#FFFFFF;
+    --ink-soft:#B7C2C6;
+    --radius:18px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:#14171A;
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+
+  /* ---------- App chrome ---------- */
+  #appTopBar{
+    position:fixed; top:0; left:0; right:0; z-index:50; box-sizing:border-box;
+    height:calc(var(--topbar-h,56px) + var(--safe-top));
+    padding:var(--safe-top) 14px 0;
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--panel); border-bottom:1px solid var(--panel-2);
+  }
+  #appTopBar .brand{ font-family:'Fraunces',serif; font-weight:700; font-size:20px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #appTopBar .brand span{ color:var(--gold); }
+  #topBarRight{ display:flex; align-items:center; gap:4px; flex-shrink:0; }
+  #settingsBtn{
+    background:transparent; border:none; color:var(--ink); font-size:22px; cursor:pointer;
+    width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  }
+  #settingsBtn:hover{ background:var(--panel-2); }
+  .scale-ctrl{ display:flex; align-items:center; gap:2px; }
+  .scale-ctrl button{
+    background:transparent; border:none; color:var(--ink); font-size:16px; font-weight:700; cursor:pointer;
+    width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  }
+  .scale-ctrl button:hover{ background:var(--panel-2); }
+  .scale-ctrl .eye{ font-size:15px; padding:0 2px; color:var(--ink-soft); }
+
+  #frameHost{
+    position:fixed; left:0; right:0; overflow:hidden;
+    top:calc(var(--topbar-h,56px) + var(--safe-top));
+    bottom:calc(var(--bottomnav-h,64px) + var(--safe-bottom));
+  }
+  #frameHost iframe{
+    position:absolute; top:0; left:0; border:none; background:#14171A;
+    transform-origin:top left;
+  }
+  #frameHost iframe.hidden-frame{ display:none; }
+
+  #bottomNav{
+    position:fixed; bottom:0; left:0; right:0; z-index:50; box-sizing:border-box;
+    height:calc(var(--bottomnav-h,64px) + var(--safe-bottom));
+    padding-bottom:var(--safe-bottom);
+    display:flex; background:var(--panel); border-top:1px solid var(--panel-2);
+  }
+  #bottomNav button{
+    flex:1; background:transparent; border:none; color:var(--ink-soft); font-family:'Inter',sans-serif;
+    font-weight:600; font-size:13px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:2px; cursor:pointer; padding:6px 0;
+  }
+  #bottomNav button .ic{ display:flex; align-items:center; justify-content:center; }
+  #bottomNav button .ic svg{ display:block; }
+  #bottomNav button.active{ color:var(--gold); }
+
+  @media (max-width:600px){
+    :root{ --topbar-h:44px; --bottomnav-h:54px; }
+    html.is-native-app{
+      --safe-top: max(env(safe-area-inset-top, 0px), 24px);
+      --safe-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+    }
+    #appTopBar{ padding:var(--safe-top) 8px 0; }
+    #appTopBar .brand{ font-size:15px; }
+    #settingsBtn{ width:34px; height:34px; font-size:18px; }
+    .scale-ctrl button{ width:26px; height:26px; font-size:13px; }
+    .scale-ctrl .eye{ font-size:12px; }
+    #bottomNav button{ font-size:10.5px; padding:4px 0; gap:1px; }
+    #bottomNav button .ic svg{ width:19px; height:19px; }
+  }
+
+  /* ---------- Settings modal ---------- */
+  #settingsOverlay{
+    position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.55);
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  #settingsOverlay.hidden{ display:none; }
+  #settingsSheet{
+    background:var(--panel); border-radius:20px 20px 0 0; width:100%; max-width:560px;
+    max-height:82vh; overflow-y:auto; padding:20px 18px calc(20px + env(safe-area-inset-bottom));
+    border:1px solid var(--panel-2); border-bottom:none;
+  }
+  #settingsSheet h2{ font-family:'Fraunces',serif; font-size:24px; margin:0 0 14px; color:var(--ink); }
+  .setting-block{ margin-bottom:22px; }
+  .setting-block h3{ font-size:14px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); margin:0 0 10px; }
+  .theme-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px 8px; }
+  .theme-swatch{ background:none; border:none; padding:0; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:5px; }
+  .theme-swatch .chip{ width:42px; height:42px; border-radius:11px; border:2px solid transparent; display:flex; overflow:hidden; }
+  .theme-swatch .chip span{ flex:1; height:100%; }
+  .theme-swatch.active .chip{ border-color:var(--gold); }
+  .theme-swatch .label{ font-size:10.5px; color:var(--ink-soft); text-align:center; line-height:1.2; }
+  .a4-row{ display:flex; align-items:center; gap:10px; }
+  .a4-row input{
+    width:90px; font-size:16px; padding:9px 12px; border-radius:10px; border:1px solid var(--panel-2);
+    background:var(--panel); color:var(--ink); font-family:'Inter',sans-serif;
+  }
+  .setting-note{ color:var(--ink-soft); font-size:13px; line-height:1.5; }
+  .lang-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:8px; }
+  .lang-tile{
+    background:var(--panel-2); border:2px solid transparent; border-radius:12px; padding:8px 4px;
+    display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;
+  }
+  .lang-tile .flag{ width:28px; height:20px; border-radius:3px; overflow:hidden; display:block; box-shadow:0 0 0 1px rgba(0,0,0,.12); }
+  .lang-tile .flag svg{ width:100%; height:100%; display:block; }
+  .lang-tile .code{ font-size:10.5px; font-weight:600; color:var(--ink-soft); }
+  .lang-tile .beta-badge{ font-size:8px; font-weight:700; color:var(--gold); background:rgba(197,106,59,.16); border:1px solid var(--gold); border-radius:5px; padding:1px 4px; letter-spacing:.03em; }
+  .lang-tile.active{ border-color:var(--gold); }
+  .lang-tile.disabled{ opacity:.45; }
+  .toggle-row{ display:flex; gap:8px; background:var(--panel-2); padding:5px; border-radius:12px; width:fit-content; }
+  .toggle-row button{
+    border:none; background:transparent; padding:9px 20px; border-radius:9px; font-weight:600; font-size:15px;
+    cursor:pointer; color:var(--ink-soft); font-family:'Inter',sans-serif;
+  }
+  .toggle-row button.active{ background:var(--gold); color:var(--active-text); }
+  #closeSettings{
+    background:transparent; border:1.5px solid var(--panel-2); color:var(--ink);
+    border-radius:999px; padding:10px 18px; font-weight:600; font-size:15px; cursor:pointer; width:100%;
+  }
+</style>
+</head>
+<body>
+
+<div id="appTopBar">
+  <div class="brand">Posture<span>Tuner</span></div>
+  <div id="topBarRight">
+    <div class="scale-ctrl">
+      <button id="scaleDown" aria-label="Zmniejsz interfejs" title="Zmniejsz interfejs" data-i18n-title="scale.down">−</button>
+      <span class="eye">👁</span>
+      <button id="scaleUp" aria-label="Powiększ interfejs" title="Powiększ interfejs" data-i18n-title="scale.up">+</button>
+    </div>
+    <button id="settingsBtn" aria-label="Ustawienia" title="Ustawienia" data-i18n-title="settings.title">⚙️</button>
+  </div>
+</div>
+
+<div id="frameHost">
+  <iframe id="frame-postawa" class="hidden-frame" src="modules/postawa.html" title="Postawa" allow="camera; microphone; autoplay"></iframe>
+  <iframe id="frame-tuner" src="modules/tuner.html" title="Tuner" allow="camera; microphone; autoplay"></iframe>
+  <iframe id="frame-metronom" class="hidden-frame" src="modules/metronom.html" title="Metronom" allow="camera; microphone; autoplay"></iframe>
+</div>
+
+<div id="bottomNav">
+  <button data-tab="postawa">
+    <span class="ic">
+      <svg viewBox="0 0 24 28" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="5" r="3.2"/>
+        <line x1="8" y1="10.2" x2="16" y2="10.2"/>
+        <line x1="12" y1="8.2" x2="12" y2="19"/>
+        <line x1="8" y1="10.2" x2="2.5" y2="17"/>
+        <line x1="16" y1="10.2" x2="21.5" y2="17"/>
+        <line x1="12" y1="19" x2="7" y2="27"/>
+        <line x1="12" y1="19" x2="17" y2="27"/>
+      </svg>
+    </span>
+    <span data-i18n="nav.postawa">Postawa</span>
+  </button>
+  <button data-tab="tuner" class="active">
+    <span class="ic">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2.6 L14.5 5 L17.2 5.4 L17.2 14 L14.5 21 L9.5 21 L6.8 14 L6.8 5.4 L9.5 5 Z"/>
+        <ellipse cx="5.2" cy="9.7" rx="1.6" ry="1.2"/>
+        <ellipse cx="18.8" cy="9.7" rx="1.6" ry="1.2"/>
+      </svg>
+    </span>
+    <span data-i18n="nav.tuner">Tuner</span>
+  </button>
+  <button data-tab="metronom">
+    <span class="ic">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3 L8 14 L6 21 L18 21 L16 14 Z"/>
+        <line x1="8" y1="14" x2="16" y2="14"/>
+        <line x1="17" y1="7.5" x2="10.8" y2="15"/>
+      </svg>
+    </span>
+    <span data-i18n="nav.metronom">Metronom</span>
+  </button>
+</div>
+
+<div id="settingsOverlay" class="hidden">
+  <div id="settingsSheet">
+    <h2 data-i18n="settings.heading">Ustawienia</h2>
+
+    <div class="setting-block">
+      <h3 data-i18n="settings.theme">Motyw kolorystyczny</h3>
+      <div class="theme-grid" id="themeGrid"></div>
+    </div>
+
+    <div class="setting-block">
+      <h3 data-i18n="settings.calib">Kalibracja tunera</h3>
+      <div class="a4-row">
+        <label for="globalA4">A4 =</label>
+        <input type="number" id="globalA4" min="430" max="450" step="1">
+        <span>Hz</span>
+      </div>
+      <p class="setting-note" data-i18n="settings.a4note">Zmiana obowiązuje natychmiast w module Tuner.</p>
+    </div>
+
+    <div class="setting-block">
+      <h3 data-i18n="settings.lang">Język aplikacji</h3>
+      <div class="lang-grid" id="langGrid"></div>
+      <p class="setting-note" id="langNote">Na razie dostępny jest tylko polski — pozostałe języki pojawią się w finalnej wersji. Twój wybór zostanie zapamiętany.</p>
+    </div>
+
+    <div class="setting-block">
+      <h3 data-i18n="settings.notation">Notacja dźwięków (Tuner)</h3>
+      <div class="toggle-row" id="notationToggle">
+        <button data-val="polish">H</button>
+        <button data-val="international">B</button>
+      </div>
+      <p class="setting-note" data-i18n="settings.notationnote">Dotyczy nazw strun i wykrywanych dźwięków w module Tuner (np. H3 vs B3).</p>
+    </div>
+
+    <div class="setting-block">
+      <h3 data-i18n="settings.sensitivity">Czułość (Tuner)</h3>
+      <div class="toggle-row" id="responseToggle">
+        <button data-val="smooth" data-i18n="settings.small">Mała</button>
+        <button data-val="fast" data-i18n="settings.big">Duża</button>
+      </div>
+    </div>
+
+    <div class="setting-block" style="text-align:center;border-top:1px solid var(--panel-2);padding-top:16px;margin-top:6px;">
+      <p class="setting-note" style="margin-bottom:8px;" data-i18n-html="about.credit">PostureTuner — stworzone przez <a href="https://github.com/adrjano" target="_blank" rel="noopener" style="color:var(--gold);">adrjano</a></p>
+      <a href="mailto:posturetuner@gmail.com?subject=PostureTuner%20%E2%80%94%20zg%C5%82oszenie" class="setting-note" style="color:var(--gold);text-decoration:none;font-weight:600;" data-i18n="about.feedback">✉️ Zgłoś uwagę</a>
+    </div>
+
+    <button id="closeSettings" data-i18n="settings.close">Zamknij</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* The extra top/bottom padding for phone status/gesture bars is only needed inside the
+     real packaged app (Capacitor WebView) — a regular mobile browser already handles its own
+     UI chrome, so applying it there just makes our bars look oversized for no reason. */
+  try{
+    if(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()){
+      document.documentElement.classList.add('is-native-app');
+    }
+  }catch(e){}
+
+  /* Shared theme system — identical THEMES array/key as the three modules */
+  const THEMES = [
+    { id:'wegiel', label:'Węgiel i miedź', bg:'#14171A', panel:'#1E2226', panel2:'#2E3538', gold:'#C56A3B', ink:'#FFFFFF', inkSoft:'#B7C2C6', activeText:'#1A1310' },
+    { id:'morska', label:'Morska głębia', bg:'#00171F', panel:'#003052', panel2:'#3A554E', gold:'#A85838', ink:'#FFFFFF', inkSoft:'#C6D3D0', activeText:'#1A1310' },
+    { id:'lesna', label:'Leśna zieleń', bg:'#0D1B14', panel:'#14261C', panel2:'#1F3A2A', gold:'#D9A441', ink:'#FFFFFF', inkSoft:'#B8C9BC', activeText:'#1A1310' },
+    { id:'fiolet', label:'Fiolet nocy', bg:'#14101F', panel:'#1E1830', panel2:'#2C2445', gold:'#8B6CF0', ink:'#FFFFFF', inkSoft:'#C3B8DE', activeText:'#FFFFFF' },
+    { id:'orzech', label:'Orzechowy brąz', bg:'#1B130E', panel:'#2A2019', panel2:'#3A2A1E', gold:'#D9AF3E', ink:'#FFFFFF', inkSoft:'#B9AB98', activeText:'#1A1310' },
+    { id:'pergamin', label:'Jasny pergamin', bg:'#F5EFE3', panel:'#FFFFFF', panel2:'#E4D9C4', gold:'#B5563C', ink:'#2A211A', inkSoft:'#6B5D4F', activeText:'#FFFFFF' },
+    { id:'chlodny', label:'Chłodny jasny', bg:'#EEF2F5', panel:'#FFFFFF', panel2:'#D7E1E8', gold:'#2E6E8E', ink:'#1B2530', inkSoft:'#5C6B78', activeText:'#FFFFFF' },
+    { id:'ocean', label:'Ocean głębinowy', bg:'#001014', panel:'#00232B', panel2:'#014653', gold:'#2FD9C4', ink:'#E7FBFA', inkSoft:'#9CC9C4', activeText:'#00232B' },
+    { id:'neon', label:'Neon nocy', bg:'#0A0014', panel:'#16002B', panel2:'#2E0A4D', gold:'#FF2FD4', ink:'#F5F0FF', inkSoft:'#C9A8E8', activeText:'#FFFFFF' },
+    { id:'cytryna', label:'Cytrynowy szok', bg:'#0D1400', panel:'#1B2900', panel2:'#2E4700', gold:'#D4FF3D', ink:'#F3FFE0', inkSoft:'#B8CE8A', activeText:'#1A1310' },
+  ];
+  const THEME_KEY = 'postawaThemeV1';
+  const A4_KEY = 'tunerA4V1';
+
+  function applyThemeToShell(theme){
+    const r = document.documentElement.style;
+    r.setProperty('--wood-dark', theme.bg);
+    r.setProperty('--panel', theme.panel);
+    r.setProperty('--panel-2', theme.panel2);
+    r.setProperty('--gold', theme.gold);
+    r.setProperty('--ink', theme.ink);
+    r.setProperty('--cream', theme.ink);
+    r.setProperty('--ink-soft', theme.inkSoft);
+    r.setProperty('--active-text', theme.activeText);
+    document.body.style.background = theme.bg;
+  }
+
+  function currentThemeId(){
+    try{ return localStorage.getItem(THEME_KEY) || THEMES[0].id; }catch(e){ return THEMES[0].id; }
+  }
+
+  function setTheme(themeId, broadcast){
+    const theme = THEMES.find(t=>t.id===themeId) || THEMES[0];
+    applyThemeToShell(theme);
+    try{ localStorage.setItem(THEME_KEY, theme.id); }catch(e){}
+    renderThemeGrid(theme.id);
+    if(broadcast){
+      Object.values(frames).forEach(f=>{
+        f.iframe.contentWindow.postMessage({ type:'app:theme', themeId: theme.id }, '*');
+      });
+    }
+  }
+
+  function renderThemeGrid(activeId){
+    const grid = document.getElementById('themeGrid');
+    grid.innerHTML = '';
+    THEMES.forEach(t=>{
+      const btn = document.createElement('button');
+      btn.className = 'theme-swatch' + (t.id===activeId ? ' active' : '');
+      btn.innerHTML = `
+        <span class="chip"><span style="background:${t.bg}"></span><span style="background:${t.panel}"></span><span style="background:${t.gold}"></span></span>`;
+      btn.addEventListener('click', ()=> setTheme(t.id, true));
+      grid.appendChild(btn);
+    });
+  }
+
+  /* ---------- Tab / iframe management ---------- */
+  const frames = {
+    postawa:  { iframe: document.getElementById('frame-postawa') },
+    tuner:    { iframe: document.getElementById('frame-tuner') },
+    metronom: { iframe: document.getElementById('frame-metronom') },
+  };
+  let activeTab = 'tuner';
+
+  function switchTab(name){
+    if(name === activeTab) return;
+    const prev = frames[activeTab];
+    prev.iframe.classList.add('hidden-frame');
+    prev.iframe.contentWindow.postMessage({ type:'app:pause' }, '*');
+
+    activeTab = name;
+    const next = frames[activeTab];
+    next.iframe.classList.remove('hidden-frame');
+    next.iframe.contentWindow.postMessage({ type:'app:resume' }, '*');
+
+    document.querySelectorAll('#bottomNav button').forEach(b=>{
+      b.classList.toggle('active', b.dataset.tab === name);
+    });
+  }
+
+  document.querySelectorAll('#bottomNav button').forEach(btn=>{
+    btn.addEventListener('click', ()=> switchTab(btn.dataset.tab));
+  });
+
+  /* Push current theme/A4 into a module once it finishes loading
+     (covers the case where it loads after the user already changed settings) */
+  Object.values(frames).forEach(f=>{
+    f.iframe.addEventListener('load', ()=>{
+      f.iframe.contentWindow.postMessage({ type:'app:theme', themeId: currentThemeId() }, '*');
+      f.iframe.contentWindow.postMessage({ type:'app:a4', value: getA4() }, '*');
+      f.iframe.contentWindow.postMessage({ type:'app:notation', value: getNotation() }, '*');
+      f.iframe.contentWindow.postMessage({ type:'app:response', value: getResponseMode() }, '*');
+      f.iframe.contentWindow.postMessage({ type:'app:lang', value: getLang() }, '*');
+    });
+  });
+
+  function getA4(){
+    try{ const v = parseFloat(localStorage.getItem(A4_KEY)); return (v>=430 && v<=450) ? v : 440; }catch(e){ return 440; }
+  }
+
+  /* ---------- Settings modal ---------- */
+  const overlay = document.getElementById('settingsOverlay');
+  const a4Input = document.getElementById('globalA4');
+  a4Input.value = getA4();
+
+  document.getElementById('settingsBtn').addEventListener('click', ()=>{
+    a4Input.value = getA4();
+    overlay.classList.remove('hidden');
+  });
+  document.getElementById('closeSettings').addEventListener('click', ()=> overlay.classList.add('hidden'));
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.classList.add('hidden'); });
+
+  a4Input.addEventListener('change', ()=>{
+    let v = parseFloat(a4Input.value);
+    if(!(v>=430 && v<=450)) v = 440;
+    a4Input.value = v;
+    try{ localStorage.setItem(A4_KEY, String(v)); }catch(e){}
+    frames.tuner.iframe.contentWindow.postMessage({ type:'app:a4', value:v }, '*');
+  });
+
+  /* ---------- i18n (shell) ---------- */
+  const I18N = {
+    pl: {
+      'nav.postawa':'Postawa', 'nav.tuner':'Tuner', 'nav.metronom':'Metronom',
+      'scale.down':'Zmniejsz interfejs', 'scale.up':'Powiększ interfejs',
+      'settings.title':'Ustawienia', 'settings.heading':'Ustawienia',
+      'settings.theme':'Motyw kolorystyczny',
+      'settings.calib':'Kalibracja tunera',
+      'settings.a4note':'Zmiana obowiązuje natychmiast w module Tuner.',
+      'settings.lang':'Język aplikacji',
+      'settings.notation':'Notacja dźwięków (Tuner)',
+      'settings.notationnote':'Dotyczy nazw strun i wykrywanych dźwięków w module Tuner (np. H3 vs B3).',
+      'settings.sensitivity':'Czułość (Tuner)',
+      'settings.small':'Mała', 'settings.big':'Duża',
+      'settings.close':'Zamknij',
+      'about.credit':'PostureTuner — stworzone przez <a href="https://github.com/adrjano" target="_blank" rel="noopener" style="color:var(--gold);">adrjano</a>',
+      'about.feedback':'✉️ Zgłoś uwagę',
+      'about.feedbackSubject':'PostureTuner — zgłoszenie',
+      'lang.readynote':'Aplikacja działa w wybranym języku.',
+      'lang.betanote':'Ten język jest w wersji beta — tłumaczenie mogło nie zostać jeszcze potwierdzone przez native speakera.',
+      'lang.defaultnote':'Na razie dostępny jest tylko polski i angielski — pozostałe języki pojawią się później. Twój wybór zostanie zapamiętany.',
+    },
+    en: {
+      'nav.postawa':'Posture', 'nav.tuner':'Tuner', 'nav.metronom':'Metronome',
+      'scale.down':'Shrink interface', 'scale.up':'Enlarge interface',
+      'settings.title':'Settings', 'settings.heading':'Settings',
+      'settings.theme':'Color theme',
+      'settings.calib':'Tuner calibration',
+      'settings.a4note':'The change applies immediately in the Tuner module.',
+      'settings.lang':'App language',
+      'settings.notation':'Note notation (Tuner)',
+      'settings.notationnote':'Affects string names and detected notes in the Tuner module (e.g. H3 vs B3).',
+      'settings.sensitivity':'Sensitivity (Tuner)',
+      'settings.small':'Low', 'settings.big':'High',
+      'settings.close':'Close',
+      'about.credit':'PostureTuner — made by <a href="https://github.com/adrjano" target="_blank" rel="noopener" style="color:var(--gold);">adrjano</a>',
+      'about.feedback':'✉️ Send feedback',
+      'about.feedbackSubject':'PostureTuner — feedback',
+      'lang.readynote':'The app is now running in the selected language.',
+      'lang.betanote':'This language is in beta — the translation may not yet be confirmed by a native speaker.',
+      'lang.defaultnote':'Only Polish and English are available for now — other languages will arrive later. Your choice will be remembered.',
+    },
+    de: {
+      'nav.postawa':'Haltung', 'nav.tuner':'Stimmgerät', 'nav.metronom':'Metronom',
+      'scale.down':'Oberfläche verkleinern', 'scale.up':'Oberfläche vergrößern',
+      'settings.title':'Einstellungen', 'settings.heading':'Einstellungen',
+      'settings.theme':'Farbschema',
+      'settings.calib':'Stimmgerät-Kalibrierung',
+      'settings.a4note':'Die Änderung gilt sofort im Modul Stimmgerät.',
+      'settings.lang':'App-Sprache',
+      'settings.notation':'Notennotation (Stimmgerät)',
+      'settings.notationnote':'Betrifft Saitennamen und erkannte Töne im Stimmgerät-Modul (z. B. H3 vs. B3).',
+      'settings.sensitivity':'Empfindlichkeit (Stimmgerät)',
+      'settings.small':'Niedrig', 'settings.big':'Hoch',
+      'settings.close':'Schließen',
+      'about.credit':'PostureTuner — erstellt von <a href="https://github.com/adrjano" target="_blank" rel="noopener" style="color:var(--gold);">adrjano</a>',
+      'about.feedback':'✉️ Feedback senden',
+      'about.feedbackSubject':'PostureTuner — Feedback',
+      'lang.readynote':'Die App läuft jetzt in der gewählten Sprache.',
+      'lang.betanote':'Diese Sprache befindet sich in der Beta-Phase — die Übersetzung wurde möglicherweise noch nicht von einem Muttersprachler bestätigt.',
+      'lang.defaultnote':'Aktuell sind nur Polnisch und Englisch verfügbar — weitere Sprachen folgen später. Deine Wahl wird gespeichert.',
+    },
+    fr: {
+      'nav.postawa':'Posture', 'nav.tuner':'Accordeur', 'nav.metronom':'Métronome',
+      'scale.down':'Réduire l\'interface', 'scale.up':'Agrandir l\'interface',
+      'settings.title':'Paramètres', 'settings.heading':'Paramètres',
+      'settings.theme':'Thème de couleurs',
+      'settings.calib':'Étalonnage de l\'accordeur',
+      'settings.a4note':'Le changement s\'applique immédiatement dans le module Accordeur.',
+      'settings.lang':'Langue de l\'application',
+      'settings.notation':'Notation des notes (Accordeur)',
+      'settings.notationnote':'Concerne les noms de cordes et les notes détectées dans le module Accordeur (par ex. H3 vs B3).',
+      'settings.sensitivity':'Sensibilité (Accordeur)',
+      'settings.small':'Faible', 'settings.big':'Élevée',
+      'settings.close':'Fermer',
+      'about.credit':'PostureTuner — créé par <a href="https://github.com/adrjano" target="_blank" rel="noopener" style="color:var(--gold);">adrjano</a>',
+      'about.feedback':'✉️ Envoyer un commentaire',
+      'about.feedbackSubject':'PostureTuner — commentaire',
+      'lang.readynote':'L\'application fonctionne maintenant dans la langue choisie.',
+      'lang.betanote':'Cette langue est en version bêta — la traduction n\'a peut-être pas encore été confirmée par un locuteur natif.',
+      'lang.defaultnote':'Seuls le polonais et l\'anglais sont disponibles pour l\'instant — d\'autres langues arriveront plus tard. Votre choix sera mémorisé.',
+    },
+    es: {
+      'nav.postawa':'Postura', 'nav.tuner':'Afinador', 'nav.metronom':'Metrónomo',
+      'scale.down':'Reducir la interfaz', 'scale.up':'Ampliar la interfaz',
+      'settings.title':'Ajustes', 'settings.heading':'Ajustes',
+      'settings.theme':'Tema de color',
+      'settings.calib':'Calibración del afinador',
+      'settings.a4note':'El cambio se aplica de inmediato en el módulo Afinador.',
+      'settings.lang':'Idioma de la aplicación',
+      'settings.notation':'Notación de notas (Afinador)',
+      'settings.notationnote':'Afecta a los nombres de las cuerdas y a las notas detectadas en el módulo Afinador (p. ej. H3 vs B3).',
+      'settings.sensitivity':'Sensibilidad (Afinador)',
+      'settings.small':'Baja', 'settings.big':'Alta',
+      'settings.close':'Cerrar',
+      'about.credit':'PostureTuner — creado por <a href="https://github.com/adrjano" target="_blank" rel="noopener" style="color:var(--gold);">adrjano</a>',
+      'about.feedback':'✉️ Enviar comentario',
+      'about.feedbackSubject':'PostureTuner — comentario',
+      'lang.readynote':'La aplicación ahora funciona en el idioma seleccionado.',
+      'lang.betanote':'Este idioma está en beta — es posible que la traducción aún no haya sido confirmada por un hablante nativo.',
+      'lang.defaultnote':'Por ahora solo están disponibles polaco e inglés — más idiomas llegarán después. Tu elección se guardará.',
+    },
+    pt: {
+      'nav.postawa':'Postura', 'nav.tuner':'Afinador', 'nav.metronom':'Metrónomo',
+      'scale.down':'Reduzir a interface', 'scale.up':'Ampliar a interface',
+      'settings.title':'Definições', 'settings.heading':'Definições',
+      'settings.theme':'Tema de cores',
+      'settings.calib':'Calibração do afinador',
+      'settings.a4note':'A alteração aplica-se de imediato no módulo Afinador.',
+      'settings.lang':'Idioma da aplicação',
+      'settings.notation':'Notação das notas (Afinador)',
+      'settings.notationnote':'Afeta os nomes das cordas e as notas detetadas no módulo Afinador (por ex. H3 vs B3).',
+      'settings.sensitivity':'Sensibilidade (Afinador)',
+      'settings.small':'Baixa', 'settings.big':'Alta',
+      'settings.close':'Fechar',
+      'about.credit':'PostureTuner — criado por <a href="https://github.com/adrjano" target="_blank" rel="noopener" style="color:var(--gold);">adrjano</a>',
+      'about.feedback':'✉️ Enviar comentário',
+      'about.feedbackSubject':'PostureTuner — comentário',
+      'lang.readynote':'A aplicação está agora a funcionar no idioma selecionado.',
+      'lang.betanote':'Este idioma está em beta — a tradução ainda pode não ter sido confirmada por um falante nativo.',
+      'lang.defaultnote':'Por agora só estão disponíveis polaco e inglês — mais idiomas chegarão mais tarde. A sua escolha será memorizada.',
+    },
+  };
+  function applyI18n(lang){
+    const dict = I18N[lang] || I18N.pl;
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      const v = dict[el.getAttribute('data-i18n')];
+      if(typeof v === 'string') el.textContent = v;
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(el=>{
+      const v = dict[el.getAttribute('data-i18n-html')];
+      if(typeof v === 'string') el.innerHTML = v;
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(el=>{
+      const v = dict[el.getAttribute('data-i18n-title')];
+      if(typeof v === 'string'){ el.setAttribute('title', v); el.setAttribute('aria-label', v); }
+    });
+    document.documentElement.lang = lang;
+    const feedbackLink = document.querySelector('a[data-i18n="about.feedback"]');
+    if(feedbackLink) feedbackLink.href = 'mailto:posturetuner@gmail.com?subject=' + encodeURIComponent(dict['about.feedbackSubject']);
+  }
+
+  /* ---------- Language tiles ---------- */
+  const LANG_KEY = 'appLangV1';
+  const LANGS = [
+    { code:'pl', ready:true, beta:false, flag:'<svg viewBox="0 0 20 14"><rect width="20" height="7" fill="#fff"/><rect y="7" width="20" height="7" fill="#dc143c"/></svg>' },
+    { code:'en', ready:true, beta:false, flag:'<svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#00247d"/><path d="M0 0L20 14M20 0L0 14" stroke="#fff" stroke-width="2.6"/><path d="M0 0L20 14M20 0L0 14" stroke="#cf142b" stroke-width="1.1"/><path d="M10 0V14M0 7H20" stroke="#fff" stroke-width="4.2"/><path d="M10 0V14M0 7H20" stroke="#cf142b" stroke-width="2"/></svg>' },
+    { code:'de', ready:true, beta:true, flag:'<svg viewBox="0 0 20 14"><rect width="20" height="4.7" fill="#000"/><rect y="4.7" width="20" height="4.7" fill="#dd0000"/><rect y="9.3" width="20" height="4.7" fill="#ffce00"/></svg>' },
+    { code:'fr', ready:true, beta:true, flag:'<svg viewBox="0 0 20 14"><rect width="6.7" height="14" fill="#0055a4"/><rect x="6.7" width="6.7" height="14" fill="#fff"/><rect x="13.3" width="6.7" height="14" fill="#ef4135"/></svg>' },
+    { code:'es', ready:true, beta:true, flag:'<svg viewBox="0 0 20 14"><rect width="20" height="14" fill="#aa151b"/><rect y="3.5" width="20" height="7" fill="#f1bf00"/></svg>' },
+    { code:'pt', ready:true, beta:true, flag:'<svg viewBox="0 0 20 14"><rect width="8" height="14" fill="#006600"/><rect x="8" width="12" height="14" fill="#cc0000"/><circle cx="8" cy="7" r="3" fill="#ffcc00" stroke="#006600" stroke-width="0.5"/></svg>' },
+  ];
+  function getLang(){ try{ const l = localStorage.getItem(LANG_KEY); return (l && LANGS.some(x=>x.code===l)) ? l : 'pl'; }catch(e){ return 'pl'; } }
+  function setLang(code, broadcast){
+    try{ localStorage.setItem(LANG_KEY, code); }catch(e){}
+    const l = LANGS.find(x=>x.code===code) || LANGS[0];
+    const dict = I18N[code];
+    document.getElementById('langNote').textContent = !dict
+      ? (I18N.pl['lang.defaultnote'])
+      : (l.beta ? dict['lang.betanote'] : dict['lang.readynote']);
+    if(dict) applyI18n(code);
+    renderLangGrid();
+    if(broadcast){
+      Object.values(frames).forEach(f=>{
+        f.iframe.contentWindow.postMessage({ type:'app:lang', value: code }, '*');
+      });
+    }
+  }
+  function renderLangGrid(){
+    const active = getLang();
+    const grid = document.getElementById('langGrid');
+    grid.innerHTML = '';
+    LANGS.forEach(l=>{
+      const tile = document.createElement('button');
+      tile.className = 'lang-tile' + (l.code===active ? ' active' : '') + (l.ready ? '' : ' disabled');
+      tile.innerHTML = `<span class="flag">${l.flag}</span><span class="code">${l.code.toUpperCase()}</span>${l.beta ? '<span class="beta-badge">BETA</span>' : ''}`;
+      tile.addEventListener('click', ()=> setLang(l.code, true));
+      grid.appendChild(tile);
+    });
+  }
+  setLang(getLang(), false);
+
+  /* ---------- Notation toggle (H / B) ---------- */
+  const NOTATION_KEY = 'tunerNotationV1';
+  function getNotation(){ try{ const n = localStorage.getItem(NOTATION_KEY); return (n==='polish'||n==='international') ? n : 'polish'; }catch(e){ return 'polish'; } }
+  function setNotation(val, broadcast){
+    try{ localStorage.setItem(NOTATION_KEY, val); }catch(e){}
+    document.querySelectorAll('#notationToggle button').forEach(b=>{
+      b.classList.toggle('active', b.dataset.val===val);
+    });
+    if(broadcast) frames.tuner.iframe.contentWindow.postMessage({ type:'app:notation', value:val }, '*');
+  }
+  document.querySelectorAll('#notationToggle button').forEach(btn=>{
+    btn.addEventListener('click', ()=> setNotation(btn.dataset.val, true));
+  });
+  setNotation(getNotation(), false);
+
+  /* ---------- Tuner response speed (Smooth / Fast) ---------- */
+  const RESPONSE_KEY = 'tunerResponseV1';
+  function getResponseMode(){ try{ const r = localStorage.getItem(RESPONSE_KEY); return (r==='smooth'||r==='fast') ? r : 'smooth'; }catch(e){ return 'smooth'; } }
+  function setResponseMode(val, broadcast){
+    try{ localStorage.setItem(RESPONSE_KEY, val); }catch(e){}
+    document.querySelectorAll('#responseToggle button').forEach(b=>{
+      b.classList.toggle('active', b.dataset.val===val);
+    });
+    if(broadcast) frames.tuner.iframe.contentWindow.postMessage({ type:'app:response', value:val }, '*');
+  }
+  document.querySelectorAll('#responseToggle button').forEach(btn=>{
+    btn.addEventListener('click', ()=> setResponseMode(btn.dataset.val, true));
+  });
+  setResponseMode(getResponseMode(), false);
+
+  /* ---------- UI scale (zoom out/in the module content to fit any screen) — remembered per module ---------- */
+  const SCALE_MIN = 0.65, SCALE_MAX = 1.3, SCALE_STEP = 0.075;
+  function scaleKey(tab){ return 'appUiScale_' + tab; }
+  function getScale(tab){
+    try{ const v = parseFloat(localStorage.getItem(scaleKey(tab))); return (v>=SCALE_MIN && v<=SCALE_MAX) ? v : 1; }catch(e){ return 1; }
+  }
+  function applyScaleToFrame(tab){
+    const v = getScale(tab);
+    const iframe = frames[tab].iframe;
+    iframe.style.transform = `scale(${v})`;
+    iframe.style.width = `calc(100% / ${v})`;
+    iframe.style.height = `calc(100% / ${v})`;
+  }
+  function setScale(tab, v){
+    v = Math.min(SCALE_MAX, Math.max(SCALE_MIN, Math.round(v/SCALE_STEP)*SCALE_STEP));
+    try{ localStorage.setItem(scaleKey(tab), String(v)); }catch(e){}
+    applyScaleToFrame(tab);
+  }
+  document.getElementById('scaleDown').addEventListener('click', ()=> setScale(activeTab, getScale(activeTab) - SCALE_STEP));
+  document.getElementById('scaleUp').addEventListener('click', ()=> setScale(activeTab, getScale(activeTab) + SCALE_STEP));
+  Object.keys(frames).forEach(tab => applyScaleToFrame(tab));
+
+  /* ---------- Init ---------- */
+  setTheme(currentThemeId(), false);
+  renderThemeGrid(currentThemeId());
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tuner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wood-dark:#1B130E;
+    --wood-mid:#3A2A1E;
+    --panel:#1E2226;
+    --panel-2:#2E3538;
+    --cream:#FFFFFF;
+    --cream-2:#2E3538;
+    --gold:#C56A3B;
+    --active-text:#1A1310;
+    --ok:#3ECF7E;
+    --ok-bg:rgba(62,207,126,0.16);
+    --bad:#F2564A;
+    --bad-bg:rgba(242,86,74,0.16);
+    --ink:#FFFFFF;
+    --ink-soft:#B7C2C6;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#14171A;
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    font-size:18px;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:560px; margin:0 auto; padding:24px 16px 60px; }
+  header{ display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:18px; }
+  h1{ font-family:'Fraunces',serif; font-optical-sizing:auto; font-weight:700; font-size:clamp(30px,7vw,42px); margin:0; color:var(--cream); letter-spacing:-0.01em; }
+  h1 span{color:var(--gold);}
+  .subtitle{ color:var(--ink-soft); font-size:14.5px; max-width:380px; line-height:1.5; margin-top:4px; }
+
+  @media (max-width:480px){
+    .wrap{ padding-left:10px; padding-right:10px; }
+  }
+
+  .btn{ font-family:'Inter',sans-serif; font-weight:600; font-size:16px; border:none; border-radius:999px; padding:11px 20px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
+  .btn-primary{ background:var(--gold); color:var(--active-text); }
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 18px -8px rgba(201,162,39,.6);}
+  .btn-ghost{ background:transparent; border:1.5px solid rgba(246,241,231,.5); color:var(--cream); }
+  .icon-btn{
+    background:rgba(28,20,16,0.55); color:var(--cream); border:none; border-radius:10px;
+    width:38px;height:38px; font-size:16px; cursor:pointer; display:flex;align-items:center;justify-content:center; flex:none;
+  }
+
+  .mode-switch{
+    display:flex; gap:6px; background:var(--panel); padding:6px; border-radius:16px; margin-bottom:14px; width:fit-content;
+    border:1px solid var(--panel-2); flex-wrap:wrap;
+  }
+  .mode-switch button{
+    border:none; background:transparent; padding:10px 18px; border-radius:999px; font-weight:600; font-size:15.5px; cursor:pointer; color:var(--ink-soft);
+  }
+  .mode-switch button.active{ background:var(--gold); color:var(--active-text); box-shadow:0 2px 10px -2px rgba(0,0,0,.35); }
+
+  .theme-picker{
+    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; padding:10px; background:var(--panel);
+    border:1px solid var(--panel-2); border-radius:14px; width:fit-content;
+  }
+  .theme-picker.hidden{ display:none; }
+  .theme-swatch{
+    display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; background:none; border:none; padding:4px;
+  }
+  .theme-swatch .chip{ width:40px; height:40px; border-radius:10px; border:2px solid transparent; display:flex; overflow:hidden; }
+  .theme-swatch .chip span{ flex:1; height:100%; }
+  .theme-swatch.active .chip{ border-color:var(--cream); }
+  .theme-swatch .label{ font-size:11px; color:var(--ink-soft); max-width:60px; text-align:center; line-height:1.2; }
+
+  .calib-row{
+    display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--panel-2);
+    border-radius:14px; padding:10px 16px; margin-bottom:14px; width:fit-content;
+  }
+  .calib-label{ font-size:14.5px; font-weight:600; color:var(--ink); white-space:nowrap; }
+  #a4Input{
+    width:66px; background:var(--panel-2); border:1px solid var(--panel-2); color:var(--cream);
+    border-radius:8px; padding:6px 8px; font-size:15px; font-weight:600; text-align:center; font-family:'Inter',sans-serif;
+  }
+  .calib-hint2{ font-size:12.5px; color:var(--ink-soft); }
+
+  .card{ background:var(--panel); border-radius:var(--radius); padding:20px 18px; box-shadow:0 10px 26px -18px rgba(0,0,0,0.5); border:1px solid var(--panel-2); }
+  .card.hidden{ display:none; }
+  .card h3{ font-family:'Fraunces',serif; font-size:18px; font-weight:600; margin:0 0 10px; color:var(--cream); }
+
+  .tuner-stage{ position:relative; text-align:center; overflow:hidden; }
+
+  .veil{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px;
+    background:rgba(28,20,16,0.92); color:var(--cream); text-align:center; padding:24px; font-size:15px; z-index:5;
+    border-radius:var(--radius);
+  }
+  .veil.hidden{display:none;}
+
+  .note-display{ margin-bottom:2px; }
+  .volume-bar{ display:flex; gap:3px; justify-content:center; align-items:flex-end; height:12px; margin-top:10px; max-width:280px; margin-left:auto; margin-right:auto; }
+  .volume-seg{ flex:1; height:100%; border-radius:2px; background:var(--panel-2); opacity:.5; transition:background .08s ease, opacity .08s ease; }
+  .volume-seg.active{ opacity:1; background:var(--ok); }
+  .volume-seg.active.mid{ background:var(--gold); }
+  .volume-seg.active.hot{ background:var(--bad); }
+  .big-note{ font-family:'Fraunces',serif; font-weight:700; font-size:60px; color:var(--cream); line-height:1; }
+  .note-oct{ font-family:'Fraunces',serif; font-weight:600; font-size:24px; color:var(--ink-soft); vertical-align:super; margin-left:2px; }
+  .freq-row{ font-size:15px; color:var(--ink-soft); margin-top:8px; }
+  .freq-row b{ color:var(--gold); font-weight:700; }
+  .target-row{ font-size:12.5px; color:var(--ink-soft); opacity:.7; margin-top:2px; min-height:16px; }
+
+  .meter{ position:relative; height:104px; max-width:420px; margin:22px auto 0; }
+  .meter-track{ position:absolute; left:0; right:0; top:78px; height:8px; border-radius:6px; background:var(--panel-2); }
+  .meter-track .zone-ok{ position:absolute; left:45%; width:10%; height:100%; background:var(--ok); opacity:.45; border-radius:6px; }
+  .meter-center-line{ position:absolute; left:50%; top:38px; width:2px; height:50px; background:var(--ink-soft); opacity:.35; transform:translateX(-50%); }
+  .meter-flat{ position:absolute; left:0; top:28px; font-size:19px; color:var(--ink-soft); opacity:.55; }
+  .meter-sharp{ position:absolute; right:0; top:28px; font-size:19px; color:var(--ink-soft); opacity:.55; }
+  .ball{
+    position:absolute; top:-3px; left:50%; width:64px; height:64px; border-radius:50%;
+    transform:translate(-50%,0); display:flex; align-items:center; justify-content:center; font-size:46px; line-height:1;
+    background:var(--panel-2); border:6px solid var(--bad); box-shadow:0 10px 22px -10px rgba(0,0,0,.55);
+    transition:transform .12s ease-out, border-color .3s ease, background .3s ease; z-index:2; will-change:transform;
+  }
+  .ball.ok{ border-color:var(--ok); background:var(--ok-bg); }
+  .ball.warn{ border-color:var(--gold); background:rgba(197,106,59,.18); }
+
+  .meter-pointer{
+    position:absolute; top:64px; left:50%; width:0; height:0;
+    border-left:7px solid transparent; border-right:7px solid transparent; border-top:9px solid var(--bad);
+    transform:translate(-50%,0); transition:transform .12s ease-out, border-top-color .3s ease; z-index:1;
+  }
+  .meter-pointer.ok{ border-top-color:var(--ok); }
+  .meter-pointer.warn{ border-top-color:var(--gold); }
+
+  .meter-ticks{ display:flex; justify-content:space-between; max-width:420px; margin:8px auto 0; font-size:11px; color:var(--ink-soft); }
+
+  .status-text{ margin-top:16px; font-size:17.5px; font-weight:700; min-height:26px; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .status-text.ok{ color:var(--ok); }
+  .status-text.warn{ color:var(--gold); }
+  .status-text.bad{ color:var(--bad); }
+  .tune-dir-icon{ display:none; font-size:24px; line-height:1; color:inherit; }
+
+  .string-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .string-header h3{ margin:0; }
+  .reset-btn{
+    background:var(--panel-2); color:var(--cream); border:none; border-radius:999px;
+    padding:7px 14px; font-size:12.5px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;
+    transition:background .2s ease;
+  }
+  @media (hover:hover) and (pointer:fine){
+    .reset-btn:hover{ background:var(--gold); color:var(--active-text); }
+  }
+  .reset-btn.active{ background:var(--gold); color:var(--active-text); }
+
+  .string-columns{ display:flex; justify-content:center; gap:52px; }
+  .string-col{ display:flex; flex-direction:column; gap:10px; }
+  .string-btn{
+    border:none; background:var(--panel-2); color:var(--cream); font-weight:700; font-family:'Fraunces',serif; font-size:19px;
+    width:54px; height:58px; border-radius:14px; cursor:pointer; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:2px; transition:background .2s ease,color .2s ease, box-shadow .2s ease;
+    position:relative;
+  }
+  .string-btn .sub{ font-family:'Inter',sans-serif; font-size:9.5px; font-weight:600; color:var(--ink-soft); }
+  .string-btn.active{ background:var(--gold); color:var(--active-text); }
+  .string-btn.active .sub{ color:var(--active-text); opacity:.8; }
+  .string-btn.auto-active-hint{ box-shadow:0 0 0 3px var(--gold) inset; }
+  .string-btn.tuned{ box-shadow:0 0 0 3px var(--ok) inset; background:var(--ok-bg); }
+  .string-btn.playing{ outline:2px dashed var(--gold); outline-offset:3px; }
+  .string-progress{
+    position:absolute; inset:-4px; border-radius:18px; padding:3px; box-sizing:border-box;
+    background: conic-gradient(var(--ok) 0deg, transparent 0deg);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events:none;
+  }
+  .big-note.flash{ animation:tunedFlash .9s ease-out; border-radius:16px; }
+  @keyframes tunedFlash{
+    0%{ text-shadow:0 0 26px var(--ok), 0 0 46px var(--ok); color:var(--ok); }
+    100%{ text-shadow:0 0 0 transparent; color:var(--cream); }
+  }
+
+  .drop-toggle{
+    margin-top:14px; font-size:12.5px; color:var(--ink-soft); background:none; border:none;
+    text-decoration:underline; cursor:pointer; display:block; margin-left:auto; margin-right:auto;
+  }
+  .drop-toggle.active{ color:var(--gold); font-weight:700; }
+
+  .countdown-overlay{
+    position:absolute; inset:0; z-index:6; background:rgba(28,20,16,0.92);
+    display:flex; align-items:center; justify-content:center; border-radius:var(--radius);
+  }
+  .countdown-overlay.hidden{ display:none; }
+  .countdown-num{ font-family:'Inter',sans-serif; font-weight:700; font-size:110px; color:var(--cream); }
+
+  .leaderboard-title{ font-size:13px; font-weight:600; color:var(--ink-soft); margin-bottom:8px; text-align:center; }
+  .leaderboard-empty{ font-size:13px; color:var(--ink-soft); text-align:center; padding:8px 0; }
+  .score-row{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; font-size:13.5px; }
+  .score-row.current{ background:var(--ok-bg); box-shadow:0 0 0 2px var(--ok) inset; font-weight:700; }
+  .score-rank{ width:20px; color:var(--ink-soft); font-weight:700; flex:none; }
+  .score-time{ font-family:'Inter',sans-serif; font-weight:700; width:64px; flex:none; }
+  .score-date{ color:var(--ink-soft); font-size:11.5px; margin-left:auto; }
+
+  .onboarding{
+    position:fixed; inset:0; z-index:50; background:rgba(10,7,5,0.88);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  .onboarding.hidden{ display:none; }
+  .onboarding-card{
+    position:relative; background:var(--panel); border:1px solid var(--panel-2); border-radius:20px; padding:28px 26px;
+    max-width:420px; width:100%; color:var(--cream);
+    max-height:85vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    margin:auto;
+  }
+  .onboarding-card h2{ font-family:'Fraunces',serif; font-size:23px; margin:0 0 14px; padding-right:26px; }
+  .onboarding-card ol{ padding-left:20px; margin:0 0 20px; display:flex; flex-direction:column; gap:10px; font-size:15.5px; line-height:1.5; color:var(--ink-soft); }
+  .onboarding-card li b{ color:var(--cream); }
+  .onboarding-card .btn{ width:100%; }
+  .onboarding-close{
+    position:absolute; top:10px; right:12px; background:none; border:none; color:var(--ink-soft);
+    font-size:28px; line-height:1; cursor:pointer; padding:4px 8px;
+  }
+  .onboarding-close:hover{ color:var(--cream); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 data-i18n="title">Tuner</h1>
+    </div>
+    <button class="icon-btn" id="helpBtn" style="background:var(--panel);color:var(--cream);" title="Jak to działa?" data-i18n-title="help.title">?</button>
+    <button class="icon-btn" id="debugBtn" style="background:var(--panel);color:var(--cream);position:static;margin-left:6px;display:none;" title="Log diagnostyczny">🐞</button>
+  </header>
+
+  <div class="card hidden" id="debugPanel" style="margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+      <h3 style="margin:0;" data-i18n="debug.title">Log diagnostyczny</h3>
+      <div style="display:flex;gap:8px;">
+        <button class="reset-btn" id="debugCopyBtn" data-i18n="debug.copy">📋 Kopiuj</button>
+        <button class="reset-btn" id="debugClearBtn" data-i18n="debug.clear">🗑️ Wyczyść</button>
+      </div>
+    </div>
+    <textarea id="debugLog" readonly style="width:100%;height:220px;background:var(--panel-2);color:var(--ink);border:1px solid var(--panel-2);border-radius:10px;padding:10px;font-family:monospace;font-size:12px;resize:vertical;"></textarea>
+  </div>
+
+  <div class="onboarding hidden" id="onboarding">
+    <div class="onboarding-card">
+      <button class="onboarding-close" id="onboardingClose" aria-label="Zamknij" data-i18n-title="onboarding.close">×</button>
+      <h2 data-i18n="onboarding.title">Witaj! 🎸</h2>
+      <ol>
+        <li data-i18n="onboarding.li1">Włącz mikrofon i zagraj pojedynczą strunę.</li>
+        <li data-i18n-html="onboarding.li2"><b>Tryb automatyczny</b> sam rozpozna, do której struny najbliżej jest dźwięk.</li>
+        <li data-i18n-html="onboarding.li3">Możesz też wybrać strunę <b>ręcznie</b> — kliknij jej przycisk (struny basowe E-A-D po lewej, cienkie G-H-e po prawej).</li>
+        <li data-i18n-html="onboarding.li4">Kliknij nazwę struny jeszcze raz, żeby usłyszeć jej <b>dźwięk referencyjny</b> (tuner wtedy się wstrzymuje) — kliknij ponownie, aby go wyłączyć.</li>
+        <li data-i18n="onboarding.li5">Kulka pośrodku skali = strojenie idealne. Kolor i strzałka pokazują, w którą stronę podkręcić. Nastrojone struny zostają podświetlone na zielono — przyciskiem Reset wyczyścisz podświetlenia.</li>
+        <li data-i18n="onboarding.li6">6. strunę możesz przestroić z E na D — użyj przełącznika pod przyciskami strun.</li>
+        <li data-i18n="onboarding.li7">W kalibracji zmienisz standard A4 (np. na 442 Hz) — ustawienie zapamiętamy.</li>
+        <li data-i18n-html="onboarding.li8">Tryb <b>🎮 Ile zajmie Ci strojenie?</b> mierzy czas nastrojenia wszystkich 6 strun i zapisuje 10 najlepszych wyników.</li>
+      </ol>
+      <button class="btn btn-primary" id="onboardingSkip" data-i18n="onboarding.skip">Zaczynajmy</button>
+    </div>
+  </div>
+
+  <div class="mode-switch" style="display:none">
+    <button id="themeBtn" title="Wypróbuj inne kolory">🎨 Motyw</button>
+  </div>
+  <div class="theme-picker hidden" id="themePicker" style="display:none"></div>
+
+  <div class="calib-row" style="display:none">
+    <span class="calib-label" data-i18n="calib.label">🎼 Kalibracja</span>
+    <input type="number" id="a4Input" min="430" max="450" step="1">
+    <span class="calib-hint2" data-i18n="calib.hint">Hz &nbsp;(standard: 440)</span>
+  </div>
+
+  <div class="card tuner-stage" id="tunerStage">
+    <div class="veil" id="veil">
+      <div style="font-family:'Fraunces',serif;font-size:20px;" data-i18n="veil.heading">Włącz mikrofon, żeby zacząć</div>
+      <div id="veilMsg" style="max-width:300px;font-size:15px;opacity:.85;" data-i18n="veil.msg">Zezwól na dostęp do mikrofonu, żeby aplikacja mogła usłyszeć dźwięk struny.</div>
+      <button class="btn btn-primary" id="startBtn" data-i18n="veil.startBtn">Włącz mikrofon</button>
+    </div>
+
+    <div class="note-display">
+      <span class="big-note" id="noteMain">–</span>
+      <div class="freq-row" id="freqRow" data-i18n="waiting">Czekam na dźwięk…</div>
+      <div class="target-row" id="targetRow"></div>
+      <div class="volume-bar" id="volumeBar"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;max-width:280px;margin-left:auto;margin-right:auto;">
+        <span style="font-size:13px;">🎙️</span>
+        <input type="range" id="micGainSlider" min="0.5" max="4" step="0.1" value="1" style="flex:1;accent-color:var(--gold);">
+        <span style="font-size:11px;color:var(--ink-soft);min-width:30px;text-align:right;" id="micGainLabel">1.0x</span>
+      </div>
+    </div>
+
+    <div class="meter">
+      <div class="meter-center-line"></div>
+      <div class="meter-track"><div class="zone-ok"></div></div>
+      <div class="meter-flat">♭</div>
+      <div class="meter-sharp">♯</div>
+      <div class="ball" id="ball">🎧</div>
+      <div class="meter-pointer" id="meterPointer"></div>
+    </div>
+    <div class="meter-ticks"><span>-50</span><span>-25</span><span>0</span><span>+25</span><span>+50</span></div>
+
+    <div class="status-text" id="statusText"><span class="tune-dir-icon" id="tuneDirIcon" aria-hidden="true"></span><span id="statusMsg" data-i18n="playString">Zagraj strunę…</span></div>
+
+    <div class="countdown-overlay hidden" id="countdownOverlay"><div class="countdown-num" id="countdownNum">5</div></div>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <div class="string-header">
+      <h3 data-i18n="strings.title">Struny</h3>
+      <div style="display:flex;gap:8px;">
+        <button class="reset-btn active" id="autoBtn" data-i18n="strings.auto">🎯 Auto</button>
+        <button class="reset-btn" id="resetBtn" title="Wyczyść zielone podświetlenia nastrojonych strun" data-i18n-title="strings.resetTitle" data-i18n="strings.reset">↺ Reset</button>
+      </div>
+    </div>
+    <div class="string-columns" id="stringColumns">
+      <div class="string-col" id="colLeft"></div>
+      <div class="string-col" id="colRight"></div>
+    </div>
+    <button class="drop-toggle" id="dropToggle">🎸 Struna 6: E (kliknij, aby przestroić na D)</button>
+  </div>
+
+  <div class="card" style="margin-top:14px;" id="gameCard">
+    <h3 style="text-align:center;" data-i18n="game.title">🎮 Ile zajmie Ci strojenie?</h3>
+    <div id="gameIdle" style="text-align:center;">
+      <p style="color:var(--ink-soft);font-size:14px;margin:0 0 14px;line-height:1.5;" data-i18n="game.desc">Zmierz czas, w którym nastroisz wszystkie 6 strun. Kliknij, poczekaj na odliczanie i graj.</p>
+      <button class="btn btn-primary" id="gameStartBtn" style="width:100%;" disabled data-i18n="game.needMic">Włącz najpierw mikrofon</button>
+    </div>
+    <div id="gameActive" style="display:none;text-align:center;">
+      <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:42px;color:var(--cream);" id="gameTimer">0:00.0</div>
+      <div style="font-size:13px;color:var(--ink-soft);margin:6px 0 14px;"><span data-i18n="game.tunedPrefix">Nastrojone struny: </span><b id="gameProgress" style="color:var(--gold);">0/6</b></div>
+      <button class="btn btn-ghost" id="gameCancelBtn" style="font-size:13px;padding:8px 16px;" data-i18n="game.cancel">Anuluj grę</button>
+    </div>
+    <div id="leaderboard" style="margin-top:16px;"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- i18n ---------- */
+  const I18N = {
+    pl: {
+      title:'Tuner', 'help.title':'Jak to działa?',
+      'debug.title':'Log diagnostyczny', 'debug.copy':'📋 Kopiuj', 'debug.clear':'🗑️ Wyczyść', 'debug.copied':'✅ Skopiowano',
+      'onboarding.close':'Zamknij', 'onboarding.title':'Witaj! 🎸',
+      'onboarding.li1':'Włącz mikrofon i zagraj pojedynczą strunę.',
+      'onboarding.li2':'<b>Tryb automatyczny</b> sam rozpozna, do której struny najbliżej jest dźwięk.',
+      'onboarding.li3':'Możesz też wybrać strunę <b>ręcznie</b> — kliknij jej przycisk (struny basowe E-A-D po lewej, cienkie G-H-e po prawej).',
+      'onboarding.li4':'Kliknij nazwę struny jeszcze raz, żeby usłyszeć jej <b>dźwięk referencyjny</b> (tuner wtedy się wstrzymuje) — kliknij ponownie, aby go wyłączyć.',
+      'onboarding.li5':'Kulka pośrodku skali = strojenie idealne. Kolor i strzałka pokazują, w którą stronę podkręcić. Nastrojone struny zostają podświetlone na zielono — przyciskiem Reset wyczyścisz podświetlenia.',
+      'onboarding.li6':'6. strunę możesz przestroić z E na D — użyj przełącznika pod przyciskami strun.',
+      'onboarding.li7':'W kalibracji zmienisz standard A4 (np. na 442 Hz) — ustawienie zapamiętamy.',
+      'onboarding.li8':'Tryb <b>🎮 Ile zajmie Ci strojenie?</b> mierzy czas nastrojenia wszystkich 6 strun i zapisuje 10 najlepszych wyników.',
+      'onboarding.skip':'Zaczynajmy',
+      'calib.label':'🎼 Kalibracja', 'calib.hint':'Hz &nbsp;(standard: 440)',
+      'veil.heading':'Włącz mikrofon, żeby zacząć',
+      'veil.msg':'Zezwól na dostęp do mikrofonu, żeby aplikacja mogła usłyszeć dźwięk struny.',
+      'veil.startBtn':'Włącz mikrofon',
+      waiting:'Czekam na dźwięk…', playString:'Zagraj strunę…',
+      'strings.title':'Struny', 'strings.auto':'🎯 Auto', 'strings.reset':'↺ Reset',
+      'strings.resetTitle':'Wyczyść zielone podświetlenia nastrojonych strun',
+      'game.title':'🎮 Ile zajmie Ci strojenie?',
+      'game.desc':'Zmierz czas, w którym nastroisz wszystkie 6 strun. Kliknij, poczekaj na odliczanie i graj.',
+      'game.needMic':'Włącz najpierw mikrofon', 'game.start':'Rozpocznij grę',
+      'game.tunedPrefix':'Nastrojone struny: ', 'game.cancel':'Anuluj grę',
+      'game.empty':'Brak wyników — zagraj pierwszą rundę!', 'game.best':'🏆 Najlepsze czasy',
+      'drop.e':'🎸 Struna 6: E (kliknij, aby przestroić na D)',
+      'drop.d':'🎸 Struna 6: D (kliknij, aby wrócić do E)',
+      'status.ok':'Strojenie OK! 🎉', 'status.up':'Podkręć w górę (za nisko)', 'status.down':'Poluzuj (za wysoko)',
+      'dir.ccw':'Podkręcaj w kierunku przeciwnym do wskazówek zegara',
+      'dir.cw':'Podkręcaj zgodnie z kierunkiem wskazówek zegara',
+      'tone.playing':'🔊 Odtwarzam dźwięk referencyjny — tuner wstrzymany…',
+      connecting:'Łączenie…',
+      'mic.notAllowed':'Brak zgody na mikrofon. Zezwól na dostęp w ustawieniach przeglądarki i spróbuj ponownie.',
+      'mic.notFound':'Nie znaleziono mikrofonu w tym urządzeniu.',
+      'mic.genericError':'Nie udało się uruchomić mikrofonu. Spróbuj ponownie.',
+      dateLocale:'pl-PL',
+    },
+    en: {
+      title:'Tuner', 'help.title':'How does this work?',
+      'debug.title':'Diagnostic log', 'debug.copy':'📋 Copy', 'debug.clear':'🗑️ Clear', 'debug.copied':'✅ Copied',
+      'onboarding.close':'Close', 'onboarding.title':'Welcome! 🎸',
+      'onboarding.li1':'Turn on the microphone and play a single string.',
+      'onboarding.li2':'<b>Auto mode</b> figures out on its own which string the sound is closest to.',
+      'onboarding.li3':'You can also pick a string <b>manually</b> — tap its button (bass strings E-A-D on the left, thin G-B-e on the right).',
+      'onboarding.li4':'Tap a string\'s name again to hear its <b>reference tone</b> (the tuner pauses while it plays) — tap again to turn it off.',
+      'onboarding.li5':'Ball centered on the scale = perfectly in tune. The color and arrow show which way to turn the peg. Tuned strings light up green — the Reset button clears the highlights.',
+      'onboarding.li6':'You can retune string 6 from E to D — use the toggle under the string buttons.',
+      'onboarding.li7':'In calibration you can change the A4 standard (e.g. to 442 Hz) — we\'ll remember the setting.',
+      'onboarding.li8':'The <b>🎮 How fast can you tune?</b> mode times how long it takes to tune all 6 strings and saves your 10 best times.',
+      'onboarding.skip':'Let\'s go',
+      'calib.label':'🎼 Calibration', 'calib.hint':'Hz &nbsp;(standard: 440)',
+      'veil.heading':'Turn on the mic to get started',
+      'veil.msg':'Allow microphone access so the app can hear the string.',
+      'veil.startBtn':'Turn on microphone',
+      waiting:'Waiting for sound…', playString:'Play a string…',
+      'strings.title':'Strings', 'strings.auto':'🎯 Auto', 'strings.reset':'↺ Reset',
+      'strings.resetTitle':'Clear the green highlights on tuned strings',
+      'game.title':'🎮 How fast can you tune?',
+      'game.desc':'Time how long it takes to tune all 6 strings. Tap, wait for the countdown, and play.',
+      'game.needMic':'Turn on the mic first', 'game.start':'Start',
+      'game.tunedPrefix':'Tuned strings: ', 'game.cancel':'Cancel',
+      'game.empty':'No scores yet — play your first round!', 'game.best':'🏆 Best times',
+      'drop.e':'🎸 String 6: E (tap to drop to D)',
+      'drop.d':'🎸 String 6: D (tap to go back to E)',
+      'status.ok':'In tune! 🎉', 'status.up':'Tune up (too low)', 'status.down':'Loosen (too high)',
+      'dir.ccw':'Turn counter-clockwise',
+      'dir.cw':'Turn clockwise',
+      'tone.playing':'🔊 Playing reference tone — tuner paused…',
+      connecting:'Connecting…',
+      'mic.notAllowed':'Microphone access denied. Allow it in your browser settings and try again.',
+      'mic.notFound':'No microphone found on this device.',
+      'mic.genericError':'Couldn\'t start the microphone. Please try again.',
+      dateLocale:'en-US',
+    },
+    de: {
+      title:'Stimmgerät', 'help.title':'Wie funktioniert das?',
+      'debug.title':'Diagnoseprotokoll', 'debug.copy':'📋 Kopieren', 'debug.clear':'🗑️ Löschen', 'debug.copied':'✅ Kopiert',
+      'onboarding.close':'Schließen', 'onboarding.title':'Willkommen! 🎸',
+      'onboarding.li1':'Schalte das Mikrofon ein und spiele eine einzelne Saite.',
+      'onboarding.li2':'<b>Automatikmodus</b> erkennt selbst, welcher Saite der Ton am nächsten ist.',
+      'onboarding.li3':'Du kannst eine Saite auch <b>manuell</b> wählen — tippe auf ihre Taste (Basssaiten E-A-D links, dünne G-H-e rechts).',
+      'onboarding.li4':'Tippe den Saitennamen erneut, um ihren <b>Referenzton</b> zu hören (das Stimmgerät pausiert dabei) — erneut tippen zum Ausschalten.',
+      'onboarding.li5':'Kugel in der Mitte der Skala = perfekt gestimmt. Farbe und Pfeil zeigen, in welche Richtung du drehen sollst. Gestimmte Saiten leuchten grün — mit Reset löschst du die Markierungen.',
+      'onboarding.li6':'Du kannst Saite 6 von E auf D umstimmen — nutze den Schalter unter den Saitentasten.',
+      'onboarding.li7':'In der Kalibrierung änderst du den A4-Standard (z. B. auf 442 Hz) — wir merken uns die Einstellung.',
+      'onboarding.li8':'Der Modus <b>🎮 Wie schnell stimmst du?</b> misst die Zeit zum Stimmen aller 6 Saiten und speichert deine 10 besten Zeiten.',
+      'onboarding.skip':'Los geht\'s',
+      'calib.label':'🎼 Kalibrierung', 'calib.hint':'Hz &nbsp;(Standard: 440)',
+      'veil.heading':'Schalte das Mikrofon ein, um zu starten',
+      'veil.msg':'Erlaube den Mikrofonzugriff, damit die App die Saite hören kann.',
+      'veil.startBtn':'Mikrofon einschalten',
+      waiting:'Warte auf Ton…', playString:'Spiele eine Saite…',
+      'strings.title':'Saiten', 'strings.auto':'🎯 Auto', 'strings.reset':'↺ Reset',
+      'strings.resetTitle':'Grüne Markierungen der gestimmten Saiten löschen',
+      'game.title':'🎮 Wie schnell stimmst du?',
+      'game.desc':'Miss die Zeit zum Stimmen aller 6 Saiten. Tippen, Countdown abwarten und spielen.',
+      'game.needMic':'Schalte zuerst das Mikrofon ein', 'game.start':'Start',
+      'game.tunedPrefix':'Gestimmte Saiten: ', 'game.cancel':'Spiel abbrechen',
+      'game.empty':'Noch keine Ergebnisse — spiele deine erste Runde!', 'game.best':'🏆 Beste Zeiten',
+      'drop.e':'🎸 Saite 6: E (tippen zum Umstimmen auf D)',
+      'drop.d':'🎸 Saite 6: D (tippen zum Zurückstimmen auf E)',
+      'status.ok':'Perfekt gestimmt! 🎉', 'status.up':'Höher stimmen (zu tief)', 'status.down':'Lösen (zu hoch)',
+      'dir.ccw':'Gegen den Uhrzeigersinn drehen',
+      'dir.cw':'Im Uhrzeigersinn drehen',
+      'tone.playing':'🔊 Referenzton wird abgespielt — Stimmgerät pausiert…',
+      connecting:'Verbinde…',
+      'mic.notAllowed':'Mikrofonzugriff verweigert. Erlaube ihn in den Browsereinstellungen und versuche es erneut.',
+      'mic.notFound':'Kein Mikrofon auf diesem Gerät gefunden.',
+      'mic.genericError':'Mikrofon konnte nicht gestartet werden. Bitte versuche es erneut.',
+      dateLocale:'de-DE',
+    },
+    fr: {
+      title:'Accordeur', 'help.title':'Comment ça marche ?',
+      'debug.title':'Journal de diagnostic', 'debug.copy':'📋 Copier', 'debug.clear':'🗑️ Effacer', 'debug.copied':'✅ Copié',
+      'onboarding.close':'Fermer', 'onboarding.title':'Bienvenue ! 🎸',
+      'onboarding.li1':'Allumez le micro et jouez une seule corde.',
+      'onboarding.li2':'Le <b>mode automatique</b> détecte tout seul de quelle corde le son se rapproche le plus.',
+      'onboarding.li3':'Vous pouvez aussi choisir une corde <b>manuellement</b> — touchez son bouton (cordes graves E-A-D à gauche, aiguës G-H-e à droite).',
+      'onboarding.li4':'Touchez à nouveau le nom de la corde pour entendre sa <b>note de référence</b> (l\'accordeur se met en pause) — touchez à nouveau pour l\'arrêter.',
+      'onboarding.li5':'Bille centrée sur l\'échelle = accordage parfait. La couleur et la flèche indiquent le sens à tourner. Les cordes accordées s\'allument en vert — le bouton Reset efface les surlignages.',
+      'onboarding.li6':'Vous pouvez réaccorder la corde 6 de E à D — utilisez le bouton sous les cordes.',
+      'onboarding.li7':'Dans le calibrage, changez le standard A4 (par ex. à 442 Hz) — nous mémoriserons le réglage.',
+      'onboarding.li8':'Le mode <b>🎮 En combien de temps pouvez-vous accorder ?</b> chronomètre l\'accordage des 6 cordes et enregistre vos 10 meilleurs temps.',
+      'onboarding.skip':'C\'est parti',
+      'calib.label':'🎼 Calibrage', 'calib.hint':'Hz &nbsp;(standard : 440)',
+      'veil.heading':'Allumez le micro pour commencer',
+      'veil.msg':'Autorisez l\'accès au micro pour que l\'application puisse entendre la corde.',
+      'veil.startBtn':'Allumer le micro',
+      waiting:'En attente de son…', playString:'Jouez une corde…',
+      'strings.title':'Cordes', 'strings.auto':'🎯 Auto', 'strings.reset':'↺ Reset',
+      'strings.resetTitle':'Effacer les surlignages verts des cordes accordées',
+      'game.title':'🎮 En combien de temps pouvez-vous accorder ?',
+      'game.desc':'Chronométrez l\'accordage des 6 cordes. Touchez, attendez le décompte, et jouez.',
+      'game.needMic':'Allumez d\'abord le micro', 'game.start':'Démarrer',
+      'game.tunedPrefix':'Cordes accordées : ', 'game.cancel':'Annuler',
+      'game.empty':'Aucun score — jouez votre première partie !', 'game.best':'🏆 Meilleurs temps',
+      'drop.e':'🎸 Corde 6 : Mi (touchez pour passer en Ré)',
+      'drop.d':'🎸 Corde 6 : Ré (touchez pour revenir au Mi)',
+      'status.ok':'Accordage parfait ! 🎉', 'status.up':'Montez (trop bas)', 'status.down':'Détendez (trop haut)',
+      'dir.ccw':'Tournez dans le sens antihoraire',
+      'dir.cw':'Tournez dans le sens horaire',
+      'tone.playing':'🔊 Lecture de la note de référence — accordeur en pause…',
+      connecting:'Connexion…',
+      'mic.notAllowed':'Accès au micro refusé. Autorisez-le dans les paramètres du navigateur et réessayez.',
+      'mic.notFound':'Aucun microphone trouvé sur cet appareil.',
+      'mic.genericError':'Impossible de démarrer le micro. Veuillez réessayer.',
+      dateLocale:'fr-FR',
+    },
+    es: {
+      title:'Afinador', 'help.title':'¿Cómo funciona esto?',
+      'debug.title':'Registro de diagnóstico', 'debug.copy':'📋 Copiar', 'debug.clear':'🗑️ Borrar', 'debug.copied':'✅ Copiado',
+      'onboarding.close':'Cerrar', 'onboarding.title':'¡Bienvenido! 🎸',
+      'onboarding.li1':'Activa el micrófono y toca una sola cuerda.',
+      'onboarding.li2':'El <b>modo automático</b> reconoce por sí solo a qué cuerda se acerca más el sonido.',
+      'onboarding.li3':'También puedes elegir una cuerda <b>manualmente</b> — toca su botón (cuerdas graves Mi-La-Re a la izquierda, agudas Sol-Si-mi a la derecha).',
+      'onboarding.li4':'Toca el nombre de la cuerda de nuevo para escuchar su <b>tono de referencia</b> (el afinador se pausa) — vuelve a tocar para apagarlo.',
+      'onboarding.li5':'Bola centrada en la escala = afinación perfecta. El color y la flecha indican hacia dónde girar. Las cuerdas afinadas se iluminan en verde — el botón Reset borra los resaltados.',
+      'onboarding.li6':'Puedes reafinar la cuerda 6 de Mi a Re — usa el interruptor bajo los botones de cuerdas.',
+      'onboarding.li7':'En la calibración puedes cambiar el estándar A4 (por ejemplo a 442 Hz) — recordaremos el ajuste.',
+      'onboarding.li8':'El modo <b>🎮 ¿Qué tan rápido puedes afinar?</b> cronometra la afinación de las 6 cuerdas y guarda tus 10 mejores tiempos.',
+      'onboarding.skip':'Empecemos',
+      'calib.label':'🎼 Calibración', 'calib.hint':'Hz &nbsp;(estándar: 440)',
+      'veil.heading':'Activa el micrófono para empezar',
+      'veil.msg':'Permite el acceso al micrófono para que la app pueda oír la cuerda.',
+      'veil.startBtn':'Activar micrófono',
+      waiting:'Esperando sonido…', playString:'Toca una cuerda…',
+      'strings.title':'Cuerdas', 'strings.auto':'🎯 Auto', 'strings.reset':'↺ Reset',
+      'strings.resetTitle':'Borrar los resaltados verdes de las cuerdas afinadas',
+      'game.title':'🎮 ¿Qué tan rápido puedes afinar?',
+      'game.desc':'Cronometra la afinación de las 6 cuerdas. Toca, espera la cuenta atrás y toca.',
+      'game.needMic':'Activa primero el micrófono', 'game.start':'Empezar',
+      'game.tunedPrefix':'Cuerdas afinadas: ', 'game.cancel':'Cancelar',
+      'game.empty':'Sin puntuaciones aún — ¡juega tu primera ronda!', 'game.best':'🏆 Mejores tiempos',
+      'drop.e':'🎸 Cuerda 6: Mi (toca para bajar a Re)',
+      'drop.d':'🎸 Cuerda 6: Re (toca para volver a Mi)',
+      'status.ok':'¡Afinación perfecta! 🎉', 'status.up':'Sube el tono (muy bajo)', 'status.down':'Afloja (muy alto)',
+      'dir.ccw':'Gira en sentido antihorario',
+      'dir.cw':'Gira en sentido horario',
+      'tone.playing':'🔊 Reproduciendo tono de referencia — afinador en pausa…',
+      connecting:'Conectando…',
+      'mic.notAllowed':'Acceso al micrófono denegado. Permítelo en la configuración del navegador e inténtalo de nuevo.',
+      'mic.notFound':'No se encontró micrófono en este dispositivo.',
+      'mic.genericError':'No se pudo iniciar el micrófono. Inténtalo de nuevo.',
+      dateLocale:'es-ES',
+    },
+    pt: {
+      title:'Afinador', 'help.title':'Como é que isto funciona?',
+      'debug.title':'Registo de diagnóstico', 'debug.copy':'📋 Copiar', 'debug.clear':'🗑️ Limpar', 'debug.copied':'✅ Copiado',
+      'onboarding.close':'Fechar', 'onboarding.title':'Bem-vindo! 🎸',
+      'onboarding.li1':'Liga o microfone e toca uma única corda.',
+      'onboarding.li2':'O <b>modo automático</b> reconhece sozinho a que corda o som está mais próximo.',
+      'onboarding.li3':'Também podes escolher uma corda <b>manualmente</b> — toca no seu botão (cordas graves Mi-La-Ré à esquerda, agudas Sol-Si-mi à direita).',
+      'onboarding.li4':'Toca no nome da corda outra vez para ouvir o seu <b>tom de referência</b> (o afinador pausa enquanto toca) — toca novamente para o desligar.',
+      'onboarding.li5':'Bola centrada na escala = afinação perfeita. A cor e a seta mostram para que lado rodar. As cordas afinadas ficam verdes — o botão Reset limpa as marcações.',
+      'onboarding.li6':'Podes reafinar a corda 6 de Mi para Ré — usa o interruptor por baixo dos botões das cordas.',
+      'onboarding.li7':'Na calibração podes mudar o padrão A4 (por ex. para 442 Hz) — vamos guardar a definição.',
+      'onboarding.li8':'O modo <b>🎮 Quão rápido consegues afinar?</b> cronometra a afinação das 6 cordas e guarda os teus 10 melhores tempos.',
+      'onboarding.skip':'Vamos lá',
+      'calib.label':'🎼 Calibração', 'calib.hint':'Hz &nbsp;(padrão: 440)',
+      'veil.heading':'Liga o microfone para começar',
+      'veil.msg':'Permite o acesso ao microfone para que a app possa ouvir a corda.',
+      'veil.startBtn':'Ligar microfone',
+      waiting:'À espera de som…', playString:'Toca uma corda…',
+      'strings.title':'Cordas', 'strings.auto':'🎯 Auto', 'strings.reset':'↺ Reset',
+      'strings.resetTitle':'Limpar as marcações verdes das cordas afinadas',
+      'game.title':'🎮 Quão rápido consegues afinar?',
+      'game.desc':'Cronometra quanto tempo demoras a afinar as 6 cordas. Toca, espera pela contagem e toca.',
+      'game.needMic':'Liga primeiro o microfone', 'game.start':'Começar',
+      'game.tunedPrefix':'Cordas afinadas: ', 'game.cancel':'Cancelar',
+      'game.empty':'Ainda sem resultados — joga a tua primeira ronda!', 'game.best':'🏆 Melhores tempos',
+      'drop.e':'🎸 Corda 6: Mi (toca para descer para Ré)',
+      'drop.d':'🎸 Corda 6: Ré (toca para voltar a Mi)',
+      'status.ok':'Afinação perfeita! 🎉', 'status.up':'Aperta (está muito baixo)', 'status.down':'Desaperta (está muito alto)',
+      'dir.ccw':'Roda no sentido anti-horário',
+      'dir.cw':'Roda no sentido horário',
+      'tone.playing':'🔊 A tocar tom de referência — afinador em pausa…',
+      connecting:'A ligar…',
+      'mic.notAllowed':'Acesso ao microfone negado. Permite-o nas definições do navegador e tenta novamente.',
+      'mic.notFound':'Não foi encontrado microfone neste dispositivo.',
+      'mic.genericError':'Não foi possível iniciar o microfone. Tenta novamente.',
+      dateLocale:'pt-PT',
+    },
+  };
+  let currentLang = 'pl';
+  try{ const l = localStorage.getItem('appLangV1'); if(['pl','en','de','fr','es','pt'].includes(l)) currentLang = l; }catch(e){}
+  function tr(){ return I18N[currentLang] || I18N.pl; }
+  function applyI18n(){
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      const v = tr()[el.getAttribute('data-i18n')];
+      if(typeof v === 'string') el.textContent = v;
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(el=>{
+      const v = tr()[el.getAttribute('data-i18n-html')];
+      if(typeof v === 'string') el.innerHTML = v;
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(el=>{
+      const v = tr()[el.getAttribute('data-i18n-title')];
+      if(typeof v === 'string'){ el.setAttribute('title', v); el.setAttribute('aria-label', v); }
+    });
+    refreshDropLabel();
+    renderLeaderboard();
+    if(!running){ freqRow.textContent = tr().waiting; statusMsgEl.textContent = tr().playString; }
+  }
+
+  /* ---------- Elements ---------- */
+  const veil = document.getElementById('veil');
+  const veilMsg = document.getElementById('veilMsg');
+  const startBtn = document.getElementById('startBtn');
+
+  const noteMain = document.getElementById('noteMain');
+  const freqRow = document.getElementById('freqRow');
+  const targetRow = document.getElementById('targetRow');
+  const volumeBar = document.getElementById('volumeBar');
+  const VOLUME_SEGMENTS = 20;
+  for(let i=0;i<VOLUME_SEGMENTS;i++){
+    const seg = document.createElement('div');
+    seg.className = 'volume-seg';
+    volumeBar.appendChild(seg);
+  }
+  function updateVolumeBar(rms){
+    const level = Math.max(0, Math.min(1, rms/0.35));
+    const activeCount = Math.round(level*VOLUME_SEGMENTS);
+    Array.from(volumeBar.children).forEach((seg,i)=>{
+      const pct = i/VOLUME_SEGMENTS;
+      seg.classList.toggle('active', i<activeCount);
+      seg.classList.toggle('mid', i<activeCount && pct>0.6 && pct<=0.85);
+      seg.classList.toggle('hot', i<activeCount && pct>0.85);
+    });
+  }
+  const ball = document.getElementById('ball');
+  const meterPointer = document.getElementById('meterPointer');
+  const meterEl = document.querySelector('.meter');
+  const statusText = document.getElementById('statusText');
+  const statusMsgEl = document.getElementById('statusMsg');
+  const tuneDirIcon = document.getElementById('tuneDirIcon');
+
+  const colLeft = document.getElementById('colLeft');
+  const colRight = document.getElementById('colRight');
+  const resetBtn = document.getElementById('resetBtn');
+  const autoBtn = document.getElementById('autoBtn');
+  const dropToggle = document.getElementById('dropToggle');
+
+  const gameStartBtn = document.getElementById('gameStartBtn');
+  const gameCancelBtn = document.getElementById('gameCancelBtn');
+  const gameIdleEl = document.getElementById('gameIdle');
+  const gameActiveEl = document.getElementById('gameActive');
+  const gameTimerEl = document.getElementById('gameTimer');
+  const gameProgressEl = document.getElementById('gameProgress');
+  const leaderboardEl = document.getElementById('leaderboard');
+  const countdownOverlay = document.getElementById('countdownOverlay');
+  const countdownNum = document.getElementById('countdownNum');
+
+  const a4Input = document.getElementById('a4Input');
+  const themeBtn = document.getElementById('themeBtn');
+  const themePicker = document.getElementById('themePicker');
+  const helpBtn = document.getElementById('helpBtn');
+  const onboarding = document.getElementById('onboarding');
+  const onboardingSkip = document.getElementById('onboardingSkip');
+  const onboardingClose = document.getElementById('onboardingClose');
+
+  /* ---------- Theme system (shared visual language with "Postawa") ---------- */
+  const THEMES = [
+    { id:'wegiel', label:'Węgiel i miedź', bg:'#14171A', panel:'#1E2226', panel2:'#2E3538', gold:'#C56A3B', ink:'#FFFFFF', inkSoft:'#B7C2C6', activeText:'#1A1310' },
+    { id:'morska', label:'Morska głębia', bg:'#00171F', panel:'#003052', panel2:'#3A554E', gold:'#A85838', ink:'#FFFFFF', inkSoft:'#C6D3D0', activeText:'#1A1310' },
+    { id:'lesna', label:'Leśna zieleń', bg:'#0D1B14', panel:'#14261C', panel2:'#1F3A2A', gold:'#D9A441', ink:'#FFFFFF', inkSoft:'#B8C9BC', activeText:'#1A1310' },
+    { id:'fiolet', label:'Fiolet nocy', bg:'#14101F', panel:'#1E1830', panel2:'#2C2445', gold:'#8B6CF0', ink:'#FFFFFF', inkSoft:'#C3B8DE', activeText:'#FFFFFF' },
+    { id:'orzech', label:'Orzechowy brąz', bg:'#1B130E', panel:'#2A2019', panel2:'#3A2A1E', gold:'#D9AF3E', ink:'#FFFFFF', inkSoft:'#B9AB98', activeText:'#1A1310' },
+    { id:'pergamin', label:'Jasny pergamin', bg:'#F5EFE3', panel:'#FFFFFF', panel2:'#E4D9C4', gold:'#B5563C', ink:'#2A211A', inkSoft:'#6B5D4F', activeText:'#FFFFFF' },
+    { id:'chlodny', label:'Chłodny jasny', bg:'#EEF2F5', panel:'#FFFFFF', panel2:'#D7E1E8', gold:'#2E6E8E', ink:'#1B2530', inkSoft:'#5C6B78', activeText:'#FFFFFF' },
+    { id:'ocean', label:'Ocean głębinowy', bg:'#001014', panel:'#00232B', panel2:'#014653', gold:'#2FD9C4', ink:'#E7FBFA', inkSoft:'#9CC9C4', activeText:'#00232B' },
+    { id:'neon', label:'Neon nocy', bg:'#0A0014', panel:'#16002B', panel2:'#2E0A4D', gold:'#FF2FD4', ink:'#F5F0FF', inkSoft:'#C9A8E8', activeText:'#FFFFFF' },
+    { id:'cytryna', label:'Cytrynowy szok', bg:'#0D1400', panel:'#1B2900', panel2:'#2E4700', gold:'#D4FF3D', ink:'#F3FFE0', inkSoft:'#B8CE8A', activeText:'#1A1310' },
+  ];
+  const THEME_KEY = 'postawaThemeV1'; // shared across app modules on purpose
+
+  function applyTheme(theme){
+    const r = document.documentElement.style;
+    r.setProperty('--panel', theme.panel);
+    r.setProperty('--panel-2', theme.panel2);
+    r.setProperty('--cream-2', theme.panel2);
+    r.setProperty('--gold', theme.gold);
+    r.setProperty('--cream', theme.ink);
+    r.setProperty('--ink', theme.ink);
+    r.setProperty('--ink-soft', theme.inkSoft);
+    r.setProperty('--active-text', theme.activeText);
+    document.body.style.background = theme.bg;
+    try{ localStorage.setItem(THEME_KEY, theme.id); }catch(e){}
+    document.querySelectorAll('.theme-swatch').forEach(el=>el.classList.toggle('active', el.dataset.id===theme.id));
+  }
+  function buildThemePicker(){
+    themePicker.innerHTML = THEMES.map(t=>`
+      <button class="theme-swatch" data-id="${t.id}">
+        <span class="chip"><span style="background:${t.bg}"></span><span style="background:${t.panel}"></span><span style="background:${t.gold}"></span></span>
+        <span class="label">${t.label}</span>
+      </button>`).join('');
+    themePicker.querySelectorAll('.theme-swatch').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const t = THEMES.find(x=>x.id===btn.dataset.id);
+        applyTheme(t);
+      });
+    });
+  }
+  buildThemePicker();
+  try{
+    const saved = localStorage.getItem(THEME_KEY);
+    if(saved){ const t = THEMES.find(x=>x.id===saved); if(t) applyTheme(t); }
+  }catch(e){}
+  themeBtn.addEventListener('click', ()=> themePicker.classList.toggle('hidden'));
+
+  /* ---------- A4 calibration ---------- */
+  const A4_KEY = 'tunerA4V1';
+  let A4 = 440;
+  try{
+    const s = parseFloat(localStorage.getItem(A4_KEY));
+    if(s>=430 && s<=450) A4 = s;
+  }catch(e){}
+  a4Input.value = A4;
+  a4Input.addEventListener('change', ()=>{
+    let v = parseFloat(a4Input.value);
+    if(isNaN(v)) v = 440;
+    v = Math.min(450, Math.max(430, v));
+    A4 = v;
+    a4Input.value = v;
+    try{ localStorage.setItem(A4_KEY, String(v)); }catch(e){}
+  });
+
+  /* ---------- Strings ---------- */
+  const BASE_STRINGS = [
+    { label:'E', sub:'6', note:'E2', freq440:82.4069 },
+    { label:'A', sub:'5', note:'A2', freq440:110.0000 },
+    { label:'D', sub:'4', note:'D3', freq440:146.832 },
+    { label:'G', sub:'3', note:'G3', freq440:195.998 },
+    { label:'H', sub:'2', note:'H3', freq440:246.942 },
+    { label:'e', sub:'1', note:'E4', freq440:329.628 },
+  ];
+  const DROP_D = { label:'D', sub:'6', note:'D2', freq440:73.4162 };
+
+  const NOTATION_KEY = 'tunerNotationV1'; // 'polish' (H) or 'international' (B)
+  let notationSystem = 'polish';
+  try{ const n = localStorage.getItem(NOTATION_KEY); if(n==='polish' || n==='international') notationSystem = n; }catch(e){}
+  function noteLabel(str){ return (str==='H' && notationSystem==='international') ? 'B' : str; }
+
+
+  let audioCtx=null, analyser=null, micStream=null, dataBuf=null, running=false;
+
+  let dropDActive = false;
+  let mode = 'auto'; // 'auto' | 'manual'
+  let manualIndex = null;
+  let referenceIndex = null;
+  let referenceOsc = null, referenceGain = null;
+  let tunedSet = new Set();
+  let autoHighlightIndex = null;
+
+  function currentStrings(){
+    const arr = BASE_STRINGS.map(s=>Object.assign({},s));
+    if(dropDActive) arr[0] = Object.assign({},DROP_D);
+    return arr;
+  }
+  function targetFreq(strDef){ return strDef.freq440 * (A4/440); }
+
+  /* ---------- Reference tone (continuous, plays a chosen string's target pitch) ---------- */
+  function statusFromCents(cents){
+    const absCents = Math.abs(cents);
+    if(absCents<=5) return { cls:'ok', msg:tr()['status.ok'], dir:null };
+    if(cents<0) return { cls: absCents<=15 ? 'warn' : 'bad', msg:tr()['status.up'], dir:'ccw' };
+    return { cls: absCents<=15 ? 'warn' : 'bad', msg:tr()['status.down'], dir:'cw' };
+  }
+  function setStatus(msg, cls, dir){
+    statusMsgEl.textContent = msg;
+    statusText.className = 'status-text' + (cls ? ' '+cls : '');
+    if(dir==='ccw'){ tuneDirIcon.textContent='↺'; tuneDirIcon.title=tr()['dir.ccw']; tuneDirIcon.style.display='inline-block'; }
+    else if(dir==='cw'){ tuneDirIcon.textContent='↻'; tuneDirIcon.title=tr()['dir.cw']; tuneDirIcon.style.display='inline-block'; }
+    else { tuneDirIcon.textContent=''; tuneDirIcon.style.display='none'; }
+  }
+  function restoreStatusAfterTone(){
+    if(hasSmoothed){
+      const st = statusFromCents(smoothedCents);
+      setStatus(st.msg, st.cls, st.dir);
+    } else {
+      setStatus(tr().playString, '', null);
+    }
+  }
+  function ensureAudioCtx(){
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  let referenceTimeoutId = null;
+  function stopReferenceTone(){
+    if(referenceTimeoutId){ clearTimeout(referenceTimeoutId); referenceTimeoutId = null; }
+    if(referenceOsc){
+      try{
+        const t = audioCtx.currentTime;
+        referenceGain.gain.setTargetAtTime(0.0001, t, 0.03);
+        referenceOsc.stop(t+0.1);
+      }catch(e){}
+    }
+    referenceOsc = null; referenceGain = null; referenceIndex = null;
+    chimeBusyUntil = performance.now() + 500; // let the speaker's own sound (and any room echo) actually fade before trusting the mic again
+    restoreStatusAfterTone();
+  }
+  function playReferenceTone(freq, idx){
+    ensureAudioCtx();
+    stopReferenceTone();
+    referenceOsc = audioCtx.createOscillator();
+    referenceGain = audioCtx.createGain();
+    referenceOsc.type = 'sine';
+    referenceOsc.frequency.value = freq;
+    referenceGain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    referenceGain.gain.linearRampToValueAtTime(0.16, audioCtx.currentTime+0.05);
+    referenceOsc.connect(referenceGain).connect(audioCtx.destination);
+    referenceOsc.start();
+    referenceIndex = idx;
+    setStatus(tr()['tone.playing'], '', null);
+    // Auto-stop after a short preview so the tuner doesn't stay frozen forever waiting
+    // for a second click — the person can still stop it early by clicking the string again.
+    referenceTimeoutId = setTimeout(()=>{ stopReferenceTone(); }, 1500);
+  }
+
+  /* ---------- String buttons (bass strings E-A-D on the left, thin strings G-H-e on the right) ---------- */
+  function onStringClick(i){
+    mode = 'manual'; manualIndex = i;
+    autoBtn.classList.remove('active');
+    const strs = currentStrings();
+    const s = strs[i];
+    if(referenceIndex === i) stopReferenceTone();
+    else playReferenceTone(targetFreq(s), i);
+    updateStringButtonStates();
+  }
+
+  function allStringButtons(){
+    return [...colLeft.children, ...colRight.children];
+  }
+
+  function renderStringButtons(){
+    const strs = currentStrings();
+    colLeft.innerHTML = '';
+    colRight.innerHTML = '';
+    const LEFT_ORDER = [2,1,0];  // D, A, E from top to bottom
+    const RIGHT_ORDER = [3,4,5]; // G, H, e from top to bottom
+    function makeBtn(i){
+      const s = strs[i];
+      const btn = document.createElement('button');
+      btn.className = 'string-btn';
+      btn.dataset.index = i;
+      btn.innerHTML = `<span>${noteLabel(s.label)}</span><span class="sub">${s.sub}</span><div class="string-progress"></div>`;
+      btn.addEventListener('click', ()=> onStringClick(i));
+      return btn;
+    }
+    LEFT_ORDER.forEach(i=> colLeft.appendChild(makeBtn(i)));
+    RIGHT_ORDER.forEach(i=> colRight.appendChild(makeBtn(i)));
+    updateStringButtonStates();
+  }
+  renderStringButtons();
+
+  function updateStringButtonStates(){
+    allStringButtons().forEach(btn=>{
+      const i = parseInt(btn.dataset.index, 10);
+      btn.classList.toggle('active', mode==='manual' && manualIndex===i);
+      btn.classList.toggle('playing', referenceIndex===i);
+      btn.classList.toggle('tuned', tunedSet.has(i));
+      btn.classList.toggle('auto-active-hint', mode==='auto' && autoHighlightIndex===i);
+    });
+  }
+
+  function stringProgressEl(index){
+    const btn = allStringButtons().find(b => parseInt(b.dataset.index,10) === index);
+    return btn ? btn.querySelector('.string-progress') : null;
+  }
+  function updateStringProgressRing(index, pct){
+    const bar = stringProgressEl(index);
+    if(!bar) return;
+    const deg = Math.max(0, Math.min(360, pct*360));
+    bar.style.background = `conic-gradient(var(--ok) ${deg}deg, transparent ${deg}deg)`;
+  }
+  function resetStringProgress(index){
+    const bar = stringProgressEl(index);
+    if(!bar) return;
+    bar.style.background = 'conic-gradient(var(--ok) 0deg, transparent 0deg)';
+  }
+  function flashNoteMain(){
+    noteMain.classList.remove('flash');
+    void noteMain.offsetWidth;
+    noteMain.classList.add('flash');
+  }
+
+  autoBtn.addEventListener('click', ()=>{
+    mode = 'auto'; manualIndex = null;
+    lockedAutoIndex = null; pendingSwitchIndex = null; pendingSwitchCount = 0;
+    autoBtn.classList.add('active');
+    stopReferenceTone();
+    updateStringButtonStates();
+  });
+
+  function refreshDropLabel(){
+    dropToggle.textContent = dropDActive ? tr()['drop.d'] : tr()['drop.e'];
+    dropToggle.classList.toggle('active', dropDActive);
+  }
+  dropToggle.addEventListener('click', ()=>{
+    dropDActive = !dropDActive;
+    tunedSet.clear();
+    lockedAutoIndex = null; pendingSwitchIndex = null; pendingSwitchCount = 0;
+    stopReferenceTone();
+    refreshDropLabel();
+    renderStringButtons();
+  });
+  refreshDropLabel();
+
+  resetBtn.addEventListener('click', ()=>{
+    tunedSet.clear();
+    stopReferenceTone();
+    updateStringButtonStates();
+    resetBtn.blur();
+  });
+
+  /* ---------- Game mode: "how fast can you tune?" ---------- */
+  const GAME_KEY = 'tunerGameScoresV1';
+  let gameActive = false, gameStartTime = 0, gameTimerInterval = null, countdownInterval = null;
+  let lastGameId = null;
+
+  function loadScores(){ try{ return JSON.parse(localStorage.getItem(GAME_KEY)) || []; }catch(e){ return []; } }
+  function saveScores(list){ try{ localStorage.setItem(GAME_KEY, JSON.stringify(list)); }catch(e){} }
+
+  function formatGameTime(ms){
+    const totalTenths = Math.round(ms/100);
+    const minutes = Math.floor(totalTenths/600);
+    const seconds = Math.floor((totalTenths%600)/10);
+    const tenths = totalTenths%10;
+    return `${minutes}:${String(seconds).padStart(2,'0')}.${tenths}`;
+  }
+  function formatGameDate(iso){
+    const d = new Date(iso);
+    return d.toLocaleDateString(tr().dateLocale) + ' ' + d.toLocaleTimeString(tr().dateLocale,{hour:'2-digit',minute:'2-digit'});
+  }
+
+  function renderLeaderboard(){
+    const scores = loadScores();
+    if(scores.length===0){
+      leaderboardEl.innerHTML = `<div class="leaderboard-empty">${tr()['game.empty']}</div>`;
+      return;
+    }
+    leaderboardEl.innerHTML = `<div class="leaderboard-title">${tr()['game.best']}</div>` +
+      scores.map((sc,i)=>`
+        <div class="score-row${sc.id===lastGameId ? ' current' : ''}">
+          <span class="score-rank">${i+1}.</span>
+          <span class="score-time">${formatGameTime(sc.time)}</span>
+          <span class="score-date">${formatGameDate(sc.date)}</span>
+        </div>`).join('');
+  }
+  renderLeaderboard();
+
+  function playFinishFanfare(){
+    if(!audioCtx) return;
+    const now = audioCtx.currentTime;
+    [523.25, 659.25, 784.0, 1046.5].forEach((f,i)=>{
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type='triangle';
+      osc.frequency.value=f;
+      const t0 = now + i*0.12;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.linearRampToValueAtTime(0.5, t0+0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0+0.5);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t0);
+      osc.stop(t0+0.55);
+    });
+  }
+
+  function beginCountdown(){
+    gameStartBtn.disabled = true;
+    countdownOverlay.classList.remove('hidden');
+    let n = 5;
+    countdownNum.textContent = n;
+    countdownInterval = setInterval(()=>{
+      n--;
+      if(n<=0){
+        clearInterval(countdownInterval);
+        countdownOverlay.classList.add('hidden');
+        startGameRun();
+      } else {
+        countdownNum.textContent = n;
+      }
+    }, 1000);
+  }
+
+  function startGameRun(){
+    tunedSet.clear();
+    lockedAutoIndex = null; pendingSwitchIndex = null; pendingSwitchCount = 0;
+    updateStringButtonStates();
+    gameActive = true;
+    gameStartTime = performance.now();
+    resetBtn.disabled = true;
+    dropToggle.disabled = true;
+    gameIdleEl.style.display = 'none';
+    gameActiveEl.style.display = 'block';
+    gameProgressEl.textContent = '0/6';
+    gameTimerEl.textContent = '0:00.0';
+    gameTimerInterval = setInterval(()=>{
+      gameTimerEl.textContent = formatGameTime(performance.now()-gameStartTime);
+    }, 100);
+  }
+
+  function endGameRun(success){
+    gameActive = false;
+    resetBtn.disabled = false;
+    dropToggle.disabled = false;
+    clearInterval(gameTimerInterval);
+    gameActiveEl.style.display = 'none';
+    gameIdleEl.style.display = 'block';
+    gameStartBtn.disabled = false;
+    if(success){
+      const elapsed = performance.now()-gameStartTime;
+      playFinishFanfare();
+      chimeBusyUntil = performance.now() + 250; // just long enough to avoid the fanfare's own attack transient, not the whole thing
+      const entry = { id: Date.now(), time: Math.round(elapsed), date: new Date().toISOString() };
+      let scores = loadScores();
+      scores.push(entry);
+      scores.sort((a,b)=>a.time-b.time);
+      scores = scores.slice(0,10);
+      lastGameId = scores.some(sc=>sc.id===entry.id) ? entry.id : null;
+      saveScores(scores);
+      renderLeaderboard();
+    }
+  }
+
+  gameStartBtn.addEventListener('click', beginCountdown);
+  gameCancelBtn.addEventListener('click', ()=> endGameRun(false));
+
+  /* ---------- Pitch detection (YIN algorithm) ---------- */
+  let smoothedCents=0, hasSmoothed=false, smoothedForIndex=null;
+  let inTuneSince=null, dinged=false, progressStringIndex=null, lastGoodTime=null;
+  let chimeBusyUntil = 0;
+  let lockedAutoIndex = null; // the string currently shown in auto mode
+  let pendingSwitchIndex = null, pendingSwitchCount = 0; // short (2-frame) confirmation before switching strings, to filter single-frame blips
+  const RESPONSE_KEY = 'tunerResponseV1'; // 'smooth' or 'fast'
+  const MIC_GAIN_KEY = 'tunerMicGainV1';
+  let micGain = 1.0;
+  try{ const g = parseFloat(localStorage.getItem(MIC_GAIN_KEY)); if(g>=0.5 && g<=4) micGain = g; }catch(e){}
+  const micGainSlider = document.getElementById('micGainSlider');
+  const micGainLabel = document.getElementById('micGainLabel');
+  micGainSlider.value = micGain;
+  micGainLabel.textContent = micGain.toFixed(1)+'x';
+  micGainSlider.addEventListener('input', ()=>{
+    micGain = parseFloat(micGainSlider.value);
+    micGainLabel.textContent = micGain.toFixed(1)+'x';
+    try{ localStorage.setItem(MIC_GAIN_KEY, String(micGain)); }catch(e){}
+  });
+  const EMA_PRESETS = { smooth: 0.05, fast: 0.35 }; // widened gap, verified against real logged jitter data for a clearly perceptible difference
+  let responseMode = 'smooth';
+  try{ const rmode = localStorage.getItem(RESPONSE_KEY); if(rmode==='smooth' || rmode==='fast') responseMode = rmode; }catch(e){}
+  let EMA_ALPHA = EMA_PRESETS[responseMode];
+
+  function freqToStringChoice(freq){
+    const strs = currentStrings();
+    let best=0, bestAbsCents=Infinity, bestCents=0;
+    strs.forEach((s,i)=>{
+      const tf = targetFreq(s);
+      const cents = 1200*Math.log2(freq/tf);
+      if(Math.abs(cents) < bestAbsCents){ bestAbsCents = Math.abs(cents); best = i; bestCents = cents; }
+    });
+    return { index:best, cents:bestCents, absCents:bestAbsCents, strDef:strs[best] };
+  }
+
+  // Pitch detection: autocorrelation with amplitude-based buffer trimming, adapted from the
+  // MIT-licensed PitchCraft project (github.com/indjoov/pitchcraft). The key trick this adds
+  // over a plain windowed autocorrelation: before computing anything, it trims off the quiet
+  // leading/trailing parts of the buffer (e.g. a pluck's initial transient click, or a fading
+  // tail) so the analysis focuses on the loudest, most stable part of the waveform.
+  // Pitch detection: McLeod Pitch Method (MPM), following the algorithm used by the
+  // real-world 'pitchy' library (MIT license, github.com/ianprime0509/pitchy), which is
+  // itself based on the paper "A Smarter Way to Find Pitch" by McLeod & Wyvill. This
+  // replaces our earlier home-grown autocorrelation approach, which had no principled
+  // way to avoid octave/subharmonic errors (e.g. mistaking a note for 1/3 of its true
+  // frequency). MPM's fix: normalize the autocorrelation into an NSDF (so lag=0 is
+  // always exactly 1), then instead of blindly taking the single tallest peak, take the
+  // FIRST "key maximum" (a peak between a positive- and negative-going zero crossing)
+  // that's already at least `clarityThreshold` (here 0.9, pitchy's own default) times as
+  // tall as the tallest one found. This is what correctly prefers the true (shorter-lag)
+  // fundamental over a taller-but-spurious peak at a harmonic multiple of it.
+  function detectPitch(buf, sampleRate){
+    const N = buf.length;
+    let rms=0;
+    for(let i=0;i<N;i++) rms += buf[i]*buf[i];
+    rms = Math.sqrt(rms/N);
+    if(rms < 0.005) return null; // silence gate
+
+    const minFreq=55, maxFreq=520; // covers dropped 6th string up to high E with margin
+    const minLag = Math.floor(sampleRate/maxFreq);
+    const maxLag = Math.min(N-2, Math.ceil(sampleRate/minFreq));
+    const W = maxLag + 2; // only compute out to the longest lag we could possibly need
+
+    // Autocorrelation r'(tau) — same direct computation as before, just no longer
+    // pre-trimmed (MPM's own normalization below handles varying signal energy properly),
+    // and only computed out to W lags (everything past our frequency range is irrelevant).
+    const ac = new Float64Array(W);
+    for(let tau=0; tau<W; tau++){
+      let sum=0;
+      for(let i=0;i<N-tau;i++) sum += buf[i]*buf[i+tau];
+      ac[tau]=sum;
+    }
+
+    // NSDF: m'(tau) via the running-sum trick from the MPM paper (section 6) —
+    // nsdf[tau] = 2*ac[tau] / m'(tau), where m'(tau) is the sum of the squared energy
+    // of the two windows being compared at that lag. nsdf[0] is always exactly 1.
+    const nsdf = new Float64Array(W);
+    let m = 2*ac[0];
+    let i=0;
+    for(; i<W && m>0; i++){
+      nsdf[i] = (2*ac[i])/m;
+      m -= buf[i]*buf[i] + buf[N-1-i]*buf[N-1-i];
+    }
+    for(; i<W; i++) nsdf[i]=0;
+
+    // Key maxima: the highest point between each positive-going and negative-going
+    // zero crossing of the NSDF curve.
+    const keyIndices = [];
+    let lookingForMax = false, curMax = -Infinity, curMaxIdx = -1;
+    for(let k=1; k<W-1; k++){
+      if(nsdf[k-1]<=0 && nsdf[k]>0){
+        lookingForMax = true; curMax = nsdf[k]; curMaxIdx = k;
+      } else if(nsdf[k-1]>0 && nsdf[k]<=0){
+        lookingForMax = false;
+        if(curMaxIdx!==-1) keyIndices.push(curMaxIdx);
+        curMaxIdx = -1;
+      } else if(lookingForMax && nsdf[k] > curMax){
+        curMax = nsdf[k]; curMaxIdx = k;
+      }
+    }
+    const inRange = keyIndices.filter(idx => idx>=minLag && idx<=maxLag);
+    if(inRange.length===0) return null;
+
+    let nMax = -Infinity;
+    for(const idx of inRange) if(nsdf[idx] > nMax) nMax = nsdf[idx];
+
+    const CLARITY_THRESHOLD = 0.9; // pitchy's own default value for k in the MPM paper
+    let resultIndex = inRange.find(idx => nsdf[idx] >= CLARITY_THRESHOLD*nMax);
+    if(resultIndex===undefined) resultIndex = inRange[inRange.length-1];
+
+    // Parabolic interpolation refine (same technique as before, applied to the NSDF)
+    let t0 = resultIndex;
+    if(t0>0 && t0<W-1){
+      const x0=t0-1, x1=t0, x2=t0+1;
+      const y0=nsdf[x0], y1=nsdf[x1], y2=nsdf[x2];
+      const a = y0/2 - y1 + y2/2;
+      const b = -(y0/2)*(x1+x2) + y1*(x0+x2) - (y2/2)*(x0+x1);
+      if(a){
+        const xMax = -b/(2*a);
+        if(xMax>0 && Math.abs(xMax-t0)<=1) t0 = xMax;
+      }
+    }
+    if(t0<=0) return null;
+    const freq = sampleRate/t0;
+    if(freq<minFreq || freq>maxFreq) return null;
+    return freq;
+  }
+
+  /* ---------- Diagnostic log panel (for tracking down real-world pitch-detection issues) ---------- */
+  const debugBtn = document.getElementById('debugBtn');
+  const debugPanel = document.getElementById('debugPanel');
+  const debugLog = document.getElementById('debugLog');
+  const debugCopyBtn = document.getElementById('debugCopyBtn');
+  const debugClearBtn = document.getElementById('debugClearBtn');
+  let lastLogTime = 0;
+  const LOG_THROTTLE_MS = 200;
+
+  function logDebugRaw(rawFreq, strDef, rawCents, accepted, currentMode){
+    const now = performance.now();
+    if(now - lastLogTime < LOG_THROTTLE_MS) return;
+    lastLogTime = now;
+    const t = new Date();
+    const ts = t.toTimeString().slice(0,8) + '.' + String(t.getMilliseconds()).padStart(3,'0');
+    const tag = accepted ? '✅' : '❌ODRZUCONE';
+    const line = `[${ts}] raw=${rawFreq.toFixed(1)}Hz → najbliższe: ${noteLabel(strDef.label)}${strDef.sub} (cel ${targetFreq(strDef).toFixed(1)}Hz)  ${rawCents>=0?'+':''}${rawCents.toFixed(1)}c  ${tag}  [${currentMode}]`;
+    debugLog.value += line + '\n';
+    // keep the buffer from growing unbounded over a long session
+    if(debugLog.value.length > 30000) debugLog.value = debugLog.value.slice(-20000);
+    debugLog.scrollTop = debugLog.scrollHeight;
+  }
+
+  debugBtn.addEventListener('click', ()=>{
+    debugPanel.classList.toggle('hidden');
+  });
+  debugCopyBtn.addEventListener('click', ()=>{
+    debugLog.select();
+    try{
+      navigator.clipboard.writeText(debugLog.value);
+      debugCopyBtn.textContent = tr()['debug.copied'];
+      setTimeout(()=> debugCopyBtn.textContent = tr()['debug.copy'], 1200);
+    }catch(e){
+      document.execCommand('copy');
+    }
+  });
+  debugClearBtn.addEventListener('click', ()=>{
+    debugLog.value = '';
+  });
+
+  function faceForCents(absCents){
+    if(absCents<=2) return '😄';
+    if(absCents<=6) return '😀';
+    if(absCents<=8) return '😊';
+    if(absCents<=25) return '😒';
+    return '😵';
+  }
+
+  function playInTuneChime(){
+    if(!audioCtx) return;
+    const now = audioCtx.currentTime;
+    [523.25, 659.25, 784.0].forEach((f,i)=>{
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type='sine';
+      osc.frequency.value=f;
+      const t0 = now + i*0.08;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.linearRampToValueAtTime(0.42, t0+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0+0.55);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t0);
+      osc.stop(t0+0.58);
+    });
+  }
+
+  function resetDisplayIdle(){
+    noteMain.textContent='–';
+    freqRow.textContent=tr().waiting;
+    targetRow.textContent='';
+    ball.style.transform='translate(-50%,0)';
+    ball.className='ball';
+    ball.textContent='🎧';
+    meterPointer.style.transform='translate(-50%,0)';
+    meterPointer.className='meter-pointer';
+    statusMsgEl.textContent=tr().playString;
+    statusText.className='status-text';
+    tuneDirIcon.textContent=''; tuneDirIcon.style.display='none';
+    autoHighlightIndex = null;
+    lockedAutoIndex = null; pendingSwitchIndex = null; pendingSwitchCount = 0;
+    if(progressStringIndex!==null){ resetStringProgress(progressStringIndex); progressStringIndex = null; }
+    inTuneSince = null; dinged = false; lastGoodTime = null;
+    freqBuf = [];
+    updateVolumeBar(0);
+    updateStringButtonStates();
+  }
+
+  const MAX_PLAUSIBLE_CENTS_AUTO = 150;   // beyond this, "nearest string" is meaningless — likely noise/transient, not a real (if very out of tune) string
+  const MAX_PLAUSIBLE_CENTS_MANUAL = 600; // manual mode allows more slack since the target is explicit, but a ~half-octave leap is still clearly noise
+
+  function updateUI(freq){
+    let choice;
+    if(mode==='manual' && manualIndex!==null){
+      const strs = currentStrings();
+      const s = strs[manualIndex];
+      const tf = targetFreq(s);
+      const cents = 1200*Math.log2(freq/tf);
+      logDebugRaw(freq, s, cents, Math.abs(cents) <= MAX_PLAUSIBLE_CENTS_MANUAL, mode);
+      if(Math.abs(cents) > MAX_PLAUSIBLE_CENTS_MANUAL) return; // ignore — almost certainly a noise burst, not the actual string
+      choice = { index:manualIndex, cents, strDef:s };
+    } else {
+      const raw = freqToStringChoice(freq);
+      logDebugRaw(freq, raw.strDef, raw.cents, raw.absCents <= MAX_PLAUSIBLE_CENTS_AUTO, mode);
+      if(raw.absCents > MAX_PLAUSIBLE_CENTS_AUTO) return; // ignore — doesn't plausibly match any string, keep last good reading on screen
+      const CONFIRM_FRAMES = 2; // short enough to feel instant, long enough to filter single-frame blips on a different string
+      if(lockedAutoIndex === null || raw.index === lockedAutoIndex){
+        lockedAutoIndex = raw.index; pendingSwitchIndex = null; pendingSwitchCount = 0;
+      } else {
+        if(pendingSwitchIndex === raw.index) pendingSwitchCount++; else { pendingSwitchIndex = raw.index; pendingSwitchCount = 1; }
+        if(pendingSwitchCount >= CONFIRM_FRAMES){
+          lockedAutoIndex = raw.index; pendingSwitchIndex = null; pendingSwitchCount = 0;
+        } else {
+          return; // a single-frame blip on a different string — ignore it, keep showing the current one uninterrupted
+        }
+      }
+      choice = { index:lockedAutoIndex, cents:raw.cents, strDef:raw.strDef };
+    }
+
+    if(choice.index !== smoothedForIndex){
+      hasSmoothed = false; // switching strings — don't blend the new reading with the old string's stale value
+      smoothedForIndex = choice.index;
+    }
+    if(!hasSmoothed){ smoothedCents = choice.cents; hasSmoothed = true; }
+    else{ smoothedCents += (choice.cents - smoothedCents)*EMA_ALPHA; }
+
+    const cents = smoothedCents;
+    const s = choice.strDef;
+
+    noteMain.textContent = noteLabel(s.note.replace(/[0-9]/g,''));
+    freqRow.innerHTML = `<b>${freq.toFixed(1)} Hz</b>`;
+    targetRow.textContent = `cel: ${targetFreq(s).toFixed(2)} Hz  •  ${cents>=0?'+':''}${cents.toFixed(1)} centów`;
+
+    const clamped = Math.max(-50, Math.min(50, cents));
+    const offsetPx = (clamped/50)*42/100 * meterEl.offsetWidth;
+    ball.style.transform = `translate(calc(-50% + ${offsetPx}px), 0)`;
+    meterPointer.style.transform = `translate(calc(-50% + ${offsetPx}px), 0)`;
+
+    const absCents = Math.abs(cents);
+    const st = statusFromCents(cents);
+    const ballClass = st.cls==='ok' ? 'ok' : (st.cls==='warn' ? 'warn' : '');
+    setStatus(st.msg, st.cls, st.dir);
+    ball.className = 'ball ' + ballClass;
+    meterPointer.className = 'meter-pointer ' + ballClass;
+
+    ball.textContent = faceForCents(absCents);
+
+    autoHighlightIndex = (mode==='auto') ? choice.index : null;
+
+    const GRACE_MS = 400; // brief interruptions (other strings' resonance bleeding through) don't restart the countdown
+    if(absCents<=5){
+      if(inTuneSince===null || choice.index!==progressStringIndex){
+        if(progressStringIndex!==null && progressStringIndex!==choice.index) resetStringProgress(progressStringIndex);
+        inTuneSince = performance.now();
+        progressStringIndex = choice.index;
+      }
+      lastGoodTime = performance.now();
+      const elapsed = performance.now() - inTuneSince;
+      updateStringProgressRing(choice.index, Math.min(1, elapsed/1000));
+      if(!dinged && elapsed>1000){
+        tunedSet.add(choice.index); // marked tuned only once the reading has actually settled
+        playInTuneChime();
+        flashNoteMain();
+        resetStringProgress(choice.index);
+        progressStringIndex = null;
+        chimeBusyUntil = performance.now() + 180; // brief — just avoids the ding's own attack, not the whole 0.7s chime
+        dinged = true;
+        if(gameActive){
+          gameProgressEl.textContent = `${tunedSet.size}/6`;
+          if(tunedSet.size>=6) endGameRun(true);
+        }
+      }
+    } else if(progressStringIndex!==null){
+      if(lastGoodTime===null || performance.now()-lastGoodTime > GRACE_MS){
+        resetStringProgress(progressStringIndex);
+        progressStringIndex = null;
+        inTuneSince = null; dinged = false;
+      }
+      // else: a brief blip out of tune (often another string's resonance bleeding through) —
+      // the countdown clock keeps running in the background; the ring just resumes once we're back
+    }
+    updateStringButtonStates();
+  }
+
+  let freqBuf = [];
+  function filterFreq(freq){
+    freqBuf.push(freq);
+    if(freqBuf.length>9) freqBuf.shift();
+    if(freqBuf.length<4) return null; // wait for a few confirming readings before trusting a freshly plucked note
+    const sorted = [...freqBuf].sort((a,b)=>a-b);
+    return sorted[Math.floor(sorted.length/2)];
+  }
+
+  const SILENCE_RMS = 0.006;
+
+  function computeRms(buf){
+    let sum=0;
+    for(let i=0;i<buf.length;i++) sum += buf[i]*buf[i];
+    return Math.sqrt(sum/buf.length);
+  }
+
+  let lastSilenceLogTime = 0;
+  function loop(){
+    if(!running) return;
+    if(referenceIndex === null && performance.now() > chimeBusyUntil){
+      analyser.getFloatTimeDomainData(dataBuf);
+      if(micGain !== 1){ for(let i=0;i<dataBuf.length;i++) dataBuf[i] *= micGain; }
+      const rms = computeRms(dataBuf);
+      updateVolumeBar(rms);
+      if(rms < SILENCE_RMS){
+        freqBuf = []; hasSmoothed = false; // true silence between notes — start the next pluck fresh
+        const now = performance.now();
+        if(now - lastSilenceLogTime > 500){
+          lastSilenceLogTime = now;
+          const t = new Date();
+          const ts = t.toTimeString().slice(0,8) + '.' + String(t.getMilliseconds()).padStart(3,'0');
+          debugLog.value += `[${ts}] (cisza — rms=${rms.toFixed(4)}, próg=${SILENCE_RMS})\n`;
+          if(debugLog.value.length > 30000) debugLog.value = debugLog.value.slice(-20000);
+          debugLog.scrollTop = debugLog.scrollHeight;
+        }
+      } else {
+        // Analyze continuously for as long as the note is audible at all (not just near its
+        // peak) — MPM is robust enough to trust the whole decay, which lets the meter keep
+        // tracking pitch in real time while you retune a string that's still ringing.
+        const raw = detectPitch(dataBuf, audioCtx.sampleRate);
+        if(raw){
+          const freq = filterFreq(raw);
+          if(freq) updateUI(freq);
+        }
+      }
+    }
+    // when there's no signal (or a reference tone / confirmation chime is playing), the meter/ball simply stays at its last known reading
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------- Keep the screen awake while tuning ---------- */
+  let wakeLock = null;
+  async function requestWakeLock(){
+    try{
+      if('wakeLock' in navigator){
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', ()=>{ wakeLock = null; });
+      }
+    }catch(e){ /* not critical if unsupported or denied */ }
+  }
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState==='visible' && running && !wakeLock) requestWakeLock();
+  });
+
+  let micIntentOn = false;
+  async function openMicStream(){
+    try{
+      return await navigator.mediaDevices.getUserMedia({
+        audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false }
+      });
+    }catch(e){
+      if(e && e.name==='NotReadableError'){
+        // This device can't provide "unprocessed" raw audio (a real hardware/driver limitation on
+        // some Android phones) — fall back to standard mic access rather than failing outright.
+        // Not ideal for a sustained tone. but far better than not working at all.
+        return await navigator.mediaDevices.getUserMedia({ audio:true });
+      }
+      throw e;
+    }
+  }
+  async function startMic(){
+    startBtn.disabled = true;
+    startBtn.textContent = tr().connecting;
+    try{
+      micStream = await openMicStream();
+      ensureAudioCtx();
+      const source = audioCtx.createMediaStreamSource(micStream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 4096;
+      dataBuf = new Float32Array(analyser.fftSize);
+      source.connect(analyser);
+      running = true;
+      micIntentOn = true;
+      veil.classList.add('hidden');
+      resetDisplayIdle();
+      gameStartBtn.disabled = false;
+      gameStartBtn.textContent = tr()['game.start'];
+      requestWakeLock();
+      requestAnimationFrame(loop);
+    }catch(e){
+      console.error(e);
+      startBtn.disabled = false;
+      startBtn.textContent = tr()['veil.startBtn'];
+      if(e && e.name==='NotAllowedError') veilMsg.textContent = tr()['mic.notAllowed'];
+      else if(e && e.name==='NotFoundError') veilMsg.textContent = tr()['mic.notFound'];
+      else veilMsg.textContent = tr()['mic.genericError'];
+    }
+  }
+  startBtn.addEventListener('click', startMic);
+
+  /* ---------- App shell integration (added for merged app) ---------- */
+  function stopMic(){
+    running = false;
+    if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream = null; }
+    releaseWakeLockTuner();
+    startBtn.disabled = false;
+    startBtn.textContent = tr()['veil.startBtn'];
+    veil.classList.remove('hidden');
+  }
+  function releaseWakeLockTuner(){
+    if(wakeLock){ wakeLock.release().catch(()=>{}); wakeLock = null; }
+  }
+  window.addEventListener('message', (e)=>{
+    const d = e.data;
+    if(!d || typeof d !== 'object') return;
+    if(d.type === 'app:theme'){
+      const t = THEMES.find(x=>x.id===d.themeId);
+      if(t) applyTheme(t);
+    }
+    if(d.type === 'app:a4' && typeof d.value === 'number'){
+      A4 = d.value;
+      a4Input.value = A4;
+      try{ localStorage.setItem(A4_KEY, String(A4)); }catch(e){}
+    }
+    if(d.type === 'app:notation' && (d.value==='polish' || d.value==='international')){
+      notationSystem = d.value;
+      try{ localStorage.setItem(NOTATION_KEY, notationSystem); }catch(e){}
+      renderStringButtons();
+    }
+    if(d.type === 'app:response' && (d.value==='smooth' || d.value==='fast')){
+      responseMode = d.value;
+      EMA_ALPHA = EMA_PRESETS[responseMode];
+      try{ localStorage.setItem(RESPONSE_KEY, responseMode); }catch(e){}
+    }
+    if(d.type === 'app:lang' && (['pl','en','de','fr','es','pt'].includes(d.value))){
+      currentLang = d.value;
+      try{ localStorage.setItem('appLangV1', currentLang); }catch(e){}
+      applyI18n();
+    }
+    if(d.type === 'app:pause'){
+      if(running) stopMic();
+      stopReferenceTone();
+      if(typeof countdownInterval !== 'undefined' && countdownInterval){
+        clearInterval(countdownInterval);
+        countdownOverlay.classList.add('hidden');
+      }
+      if(gameActive) endGameRun(false);
+    }
+    if(d.type === 'app:resume'){
+      if(micIntentOn && !running) startMic();
+    }
+  });
+  applyI18n(); // apply whatever language was already stored, in case it's not the default
+
+  /* ---------- Onboarding ---------- */
+  function dismissOnboarding(){
+    onboarding.classList.add('hidden');
+    try{ localStorage.setItem('tunerOnboardSeenV1','1'); }catch(e){}
+  }
+  // Samouczek wyłączony automatycznie po scaleniu w aplikację (dostępny ręcznie przez przycisk pomocy).
+  // try{ if(!localStorage.getItem('tunerOnboardSeenV1')) onboarding.classList.remove('hidden'); }
+  // catch(e){ onboarding.classList.remove('hidden'); }
+  onboardingSkip.addEventListener('click', dismissOnboarding);
+  onboardingClose.addEventListener('click', dismissOnboarding);
+  onboarding.addEventListener('click', (e)=>{ if(e.target===onboarding) dismissOnboarding(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !onboarding.classList.contains('hidden')) dismissOnboarding(); });
+  helpBtn.addEventListener('click', ()=> onboarding.classList.remove('hidden'));
+
+  resetDisplayIdle();
+})();
+</script>
+</body>
+</html>

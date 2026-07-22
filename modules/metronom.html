@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Metronom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wood-dark:#1B130E;
+    --wood-mid:#3A2A1E;
+    --panel:#1E2226;
+    --panel-2:#2E3538;
+    --cream:#FFFFFF;
+    --cream-2:#2E3538;
+    --gold:#C56A3B;
+    --active-text:#1A1310;
+    --ok:#3ECF7E;
+    --ok-bg:rgba(62,207,126,0.16);
+    --bad:#F2564A;
+    --bad-bg:rgba(242,86,74,0.16);
+    --ink:#FFFFFF;
+    --ink-soft:#B7C2C6;
+    --radius:18px;
+    --dot-normal:#E8B93E;
+    --dot-accent:#E2793A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#14171A;
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    font-size:18px;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:560px; margin:0 auto; padding:24px 16px 60px; }
+  header{ display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:18px; }
+  h1{ font-family:'Fraunces',serif; font-optical-sizing:auto; font-weight:700; font-size:clamp(30px,7vw,42px); margin:0; color:var(--cream); letter-spacing:-0.01em; }
+  h1 span{color:var(--gold);}
+
+  @media (max-width:480px){
+    .wrap{ padding-left:10px; padding-right:10px; }
+  }
+
+  .btn{ font-family:'Inter',sans-serif; font-weight:600; font-size:16px; border:none; border-radius:999px; padding:11px 20px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
+  .btn-primary{ background:var(--gold); color:var(--active-text); }
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 18px -8px rgba(201,162,39,.6);}
+  .btn-ghost{ background:transparent; border:1.5px solid rgba(246,241,231,.5); color:var(--cream); }
+
+  .mode-switch{
+    display:flex; gap:6px; background:var(--panel); padding:6px; border-radius:16px; margin-bottom:14px; width:fit-content;
+    border:1px solid var(--panel-2); flex-wrap:wrap;
+  }
+  .mode-switch button{
+    border:none; background:transparent; padding:10px 18px; border-radius:999px; font-weight:600; font-size:15.5px; cursor:pointer; color:var(--ink-soft);
+  }
+  .mode-switch button.active{ background:var(--gold); color:var(--active-text); box-shadow:0 2px 10px -2px rgba(0,0,0,.35); }
+
+  .theme-picker{
+    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; padding:10px; background:var(--panel);
+    border:1px solid var(--panel-2); border-radius:14px; width:fit-content;
+  }
+  .theme-picker.hidden{ display:none; }
+  .theme-swatch{ display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; background:none; border:none; padding:4px; }
+  .theme-swatch .chip{ width:40px; height:40px; border-radius:10px; border:2px solid transparent; display:flex; overflow:hidden; }
+  .theme-swatch .chip span{ flex:1; height:100%; }
+  .theme-swatch.active .chip{ border-color:var(--cream); }
+  .theme-swatch .label{ font-size:11px; color:var(--ink-soft); max-width:60px; text-align:center; line-height:1.2; }
+
+  .card{ background:var(--panel); border-radius:var(--radius); padding:20px 18px; box-shadow:0 10px 26px -18px rgba(0,0,0,0.5); border:1px solid var(--panel-2); margin-bottom:14px; }
+  .card h3{ font-family:'Fraunces',serif; font-size:18px; font-weight:600; margin:0 0 12px; color:var(--cream); text-align:center; }
+
+  /* BPM display */
+  .bpm-stage{ text-align:center; }
+  .bpm-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+  .bpm-step-col{ display:flex; flex-direction:column; gap:10px; flex:none; }
+  .bpm-display-col{ flex:1; min-width:0; padding-top:4px; }
+  .bpm-display{ display:flex; align-items:baseline; justify-content:center; gap:8px; }
+  .bpm-number{ font-family:'Inter',sans-serif; font-weight:700; font-size:clamp(46px, 13vw, 62px); color:var(--cream); line-height:1; letter-spacing:-0.02em; }
+  .bpm-unit{ font-size:16px; color:var(--ink-soft); font-weight:600; }
+  .tempo-label{ font-size:14.5px; color:var(--gold); font-weight:700; margin-top:4px; letter-spacing:.02em; text-transform:uppercase; }
+
+  .bpm-step-btn{
+    width:54px; height:54px; border-radius:50%; border:none; background:var(--panel-2); color:var(--cream);
+    font-size:18px; font-family:'Inter',sans-serif; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .bpm-step-btn:active{ background:var(--gold); color:var(--active-text); }
+  .bpm-slider{ width:100%; accent-color:var(--gold); height:6px; margin-top:22px; }
+
+  .tap-row{ margin-top:16px; display:flex; justify-content:center; }
+  .tap-btn{
+    background:var(--panel-2); color:var(--cream); border:none; border-radius:14px; padding:12px 26px;
+    font-weight:700; font-size:15.5px; cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .tap-btn:active{ background:var(--gold); color:var(--active-text); }
+
+  /* Beat dots - clickable, cycle through normal / accent / muted; light up as the beat counts */
+  .beat-row{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:6px 0 16px; }
+  .beat-dot{
+    position:relative; width:30px; height:30px; border-radius:50%; border:none; padding:0;
+    display:flex; align-items:center; justify-content:center; font-size:13px; cursor:pointer;
+    transition:transform .12s ease; -webkit-tap-highlight-color:transparent;
+  }
+  .beat-dot.state-normal{ background:var(--dot-normal); }
+  .beat-dot.state-accent{ background:var(--dot-accent); }
+  .beat-dot.state-muted{ background:var(--panel-2); opacity:.5; }
+  .beat-dot.state-muted::after{
+    content:''; position:absolute; width:150%; height:2px; background:var(--bad); transform:rotate(45deg);
+  }
+  .beat-dot.active{ transform:scale(1.28); box-shadow:0 0 0 5px rgba(255,255,255,.2); }
+
+  /* Pendulum - swings side to side like a real metronome arm */
+  .pendulum-track{ position:relative; height:38px; width:100%; margin:20px auto 22px; }
+  .pendulum-track::before{
+    content:''; position:absolute; left:2px; right:2px; top:50%; height:2px;
+    background:var(--panel-2); border-radius:2px; transform:translateY(-50%);
+  }
+  .pendulum-dot{
+    position:absolute; top:50%; left:3%; width:30px; height:30px; border-radius:50%;
+    background:var(--bad); transform:translate(-50%,-50%);
+    transition-property:left; transition-timing-function:linear;
+    box-shadow:0 6px 14px -6px rgba(0,0,0,.5);
+  }
+
+  /* Uderzenia/takt + Kliknięcia side by side */
+  .settings-row{ display:flex; gap:14px; }
+  .settings-card{ flex:1; min-width:0; }
+  .select-field{
+    width:100%; background:var(--panel-2); color:var(--cream); border:1px solid var(--panel-2);
+    border-radius:12px; padding:12px 14px; font-family:'Inter',sans-serif; font-weight:700; font-size:16px;
+    cursor:pointer; text-align:center; appearance:none; -webkit-appearance:none; -moz-appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,var(--ink-soft) 50%),linear-gradient(135deg,var(--ink-soft) 50%,transparent 50%);
+    background-position:calc(100% - 22px) center, calc(100% - 16px) center;
+    background-size:6px 6px,6px 6px; background-repeat:no-repeat;
+  }
+
+  /* Play button */
+  .play-stage{ display:flex; justify-content:center; margin:8px 0 10px; }
+  .play-btn{
+    width:96px; height:96px; border-radius:50%; border:none; cursor:pointer;
+    background:var(--gold); color:var(--active-text); font-size:34px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 14px 30px -14px rgba(0,0,0,.55);
+    transition:transform .12s ease;
+  }
+  .play-btn:active{ transform:scale(.94); }
+  .play-btn.playing{ background:var(--bad); color:#fff; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 data-i18n="title">Metronom</h1>
+  </header>
+
+  <div class="mode-switch" style="display:none">
+    <button id="themeBtn" title="Wypróbuj inne kolory">🎨 Motyw</button>
+  </div>
+  <div class="theme-picker hidden" id="themePicker" style="display:none"></div>
+
+  <div class="card">
+    <div class="beat-row" id="beatRow"></div>
+    <div class="pendulum-track">
+      <div class="pendulum-dot" id="pendulumDot"></div>
+    </div>
+    <div class="play-stage">
+      <button class="play-btn" id="playBtn">▶</button>
+    </div>
+  </div>
+
+  <div class="card bpm-stage">
+    <div class="bpm-top">
+      <div class="bpm-step-col">
+        <button class="bpm-step-btn" id="bpmMinus1" title="-1">−1</button>
+        <button class="bpm-step-btn" id="bpmMinus5" title="-5">−5</button>
+      </div>
+      <div class="bpm-display-col">
+        <div class="bpm-display">
+          <span class="bpm-number" id="bpmNumber">100</span>
+          <span class="bpm-unit">BPM</span>
+        </div>
+        <div class="tempo-label" id="tempoLabel">Moderato</div>
+      </div>
+      <div class="bpm-step-col">
+        <button class="bpm-step-btn" id="bpmPlus1" title="+1">+1</button>
+        <button class="bpm-step-btn" id="bpmPlus5" title="+5">+5</button>
+      </div>
+    </div>
+
+    <input type="range" class="bpm-slider" id="bpmSlider" min="30" max="250" value="100">
+
+    <div class="tap-row">
+      <button class="tap-btn" id="tapBtn">👆 TAP</button>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <div class="card settings-card">
+      <h3 data-i18n="beatsPerBar">Uderzenia/takt</h3>
+      <select class="select-field" id="beatsPerBarSelect"></select>
+    </div>
+    <div class="card settings-card">
+      <h3 data-i18n="clicks">Kliknięcia</h3>
+      <select class="select-field" id="subdivisionSelect"></select>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- Elements ---------- */
+  const bpmNumber = document.getElementById('bpmNumber');
+  const tempoLabel = document.getElementById('tempoLabel');
+  const bpmSlider = document.getElementById('bpmSlider');
+  const bpmMinus5 = document.getElementById('bpmMinus5');
+  const bpmMinus1 = document.getElementById('bpmMinus1');
+  const bpmPlus1 = document.getElementById('bpmPlus1');
+  const bpmPlus5 = document.getElementById('bpmPlus5');
+  const tapBtn = document.getElementById('tapBtn');
+  const beatsPerBarSelect = document.getElementById('beatsPerBarSelect');
+  const subdivisionSelect = document.getElementById('subdivisionSelect');
+  const beatRow = document.getElementById('beatRow');
+  const pendulumDot = document.getElementById('pendulumDot');
+  const playBtn = document.getElementById('playBtn');
+  const themeBtn = document.getElementById('themeBtn');
+  const themePicker = document.getElementById('themePicker');
+
+  /* ---------- i18n ---------- */
+  const I18N = {
+    pl: { title:'Metronom', beatsPerBar:'Uderzenia/takt', clicks:'Kliknięcia',
+      beatAccent:'akcent', beatMuted:'wyciszone', beatNormal:'normalne uderzenie',
+      beatAria:(n,label)=>`Uderzenie ${n}: ${label}. Kliknij, aby zmienić.` },
+    en: { title:'Metronome', beatsPerBar:'Beats/bar', clicks:'Clicks',
+      beatAccent:'accent', beatMuted:'muted', beatNormal:'normal beat',
+      beatAria:(n,label)=>`Beat ${n}: ${label}. Click to change.` },
+    de: { title:'Metronom', beatsPerBar:'Schläge/Takt', clicks:'Klicks',
+      beatAccent:'Akzent', beatMuted:'stumm', beatNormal:'normaler Schlag',
+      beatAria:(n,label)=>`Schlag ${n}: ${label}. Klicken zum Ändern.` },
+    fr: { title:'Métronome', beatsPerBar:'Temps/mesure', clicks:'Clics',
+      beatAccent:'accent', beatMuted:'muet', beatNormal:'temps normal',
+      beatAria:(n,label)=>`Temps ${n}\xa0: ${label}. Cliquez pour changer.` },
+    es: { title:'Metrónomo', beatsPerBar:'Pulsos/compás', clicks:'Clics',
+      beatAccent:'acento', beatMuted:'silenciado', beatNormal:'pulso normal',
+      beatAria:(n,label)=>`Pulso ${n}: ${label}. Toca para cambiar.` },
+    pt: { title:'Metrónomo', beatsPerBar:'Batidas/compasso', clicks:'Cliques',
+      beatAccent:'acento', beatMuted:'silenciado', beatNormal:'batida normal',
+      beatAria:(n,label)=>`Batida ${n}: ${label}. Toque para alterar.` },
+  };
+  let currentLang = 'pl';
+  try{ const l = localStorage.getItem('appLangV1'); if(['pl','en','de','fr','es','pt'].includes(l)) currentLang = l; }catch(e){}
+  function tr(){ return I18N[currentLang] || I18N.pl; }
+  function applyI18n(){
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      const v = tr()[el.getAttribute('data-i18n')];
+      if(typeof v === 'string') el.textContent = v;
+    });
+    renderBeatDots();
+  }
+
+  /* ---------- Theme system (shared with Postawa / Tuner) ---------- */
+  const THEMES = [
+    { id:'wegiel', label:'Węgiel i miedź', bg:'#14171A', panel:'#1E2226', panel2:'#2E3538', gold:'#C56A3B', ink:'#FFFFFF', inkSoft:'#B7C2C6', activeText:'#1A1310', dotNormal:'#E8B93E', dotAccent:'#E2793A' },
+    { id:'morska', label:'Morska głębia', bg:'#00171F', panel:'#003052', panel2:'#3A554E', gold:'#A85838', ink:'#FFFFFF', inkSoft:'#C6D3D0', activeText:'#1A1310', dotNormal:'#E3B94A', dotAccent:'#C9702E' },
+    { id:'lesna', label:'Leśna zieleń', bg:'#0D1B14', panel:'#14261C', panel2:'#1F3A2A', gold:'#D9A441', ink:'#FFFFFF', inkSoft:'#B8C9BC', activeText:'#1A1310', dotNormal:'#E4C24A', dotAccent:'#D98A2B' },
+    { id:'fiolet', label:'Fiolet nocy', bg:'#14101F', panel:'#1E1830', panel2:'#2C2445', gold:'#8B6CF0', ink:'#FFFFFF', inkSoft:'#C3B8DE', activeText:'#FFFFFF', dotNormal:'#E8C34E', dotAccent:'#E37B4A' },
+    { id:'orzech', label:'Orzechowy brąz', bg:'#1B130E', panel:'#2A2019', panel2:'#3A2A1E', gold:'#D9AF3E', ink:'#FFFFFF', inkSoft:'#B9AB98', activeText:'#1A1310', dotNormal:'#E7BE49', dotAccent:'#CE7632' },
+    { id:'pergamin', label:'Jasny pergamin', bg:'#F5EFE3', panel:'#FFFFFF', panel2:'#E4D9C4', gold:'#B5563C', ink:'#2A211A', inkSoft:'#6B5D4F', activeText:'#FFFFFF', dotNormal:'#D9A83E', dotAccent:'#C1652E' },
+    { id:'chlodny', label:'Chłodny jasny', bg:'#EEF2F5', panel:'#FFFFFF', panel2:'#D7E1E8', gold:'#2E6E8E', ink:'#1B2530', inkSoft:'#5C6B78', activeText:'#FFFFFF', dotNormal:'#E0A93C', dotAccent:'#D97A2E' },
+    { id:'ocean', label:'Ocean głębinowy', bg:'#001014', panel:'#00232B', panel2:'#014653', gold:'#2FD9C4', ink:'#E7FBFA', inkSoft:'#9CC9C4', activeText:'#00232B', dotNormal:'#E8C24A', dotAccent:'#E08A3E' },
+    { id:'neon', label:'Neon nocy', bg:'#0A0014', panel:'#16002B', panel2:'#2E0A4D', gold:'#FF2FD4', ink:'#F5F0FF', inkSoft:'#C9A8E8', activeText:'#FFFFFF', dotNormal:'#F5E14A', dotAccent:'#FF8A3D' },
+    { id:'cytryna', label:'Cytrynowy szok', bg:'#0D1400', panel:'#1B2900', panel2:'#2E4700', gold:'#D4FF3D', ink:'#F3FFE0', inkSoft:'#B8CE8A', activeText:'#1A1310', dotNormal:'#F2E14A', dotAccent:'#FF9C3D' },
+  ];
+  const THEME_KEY = 'postawaThemeV1'; // shared across app modules on purpose
+
+  function applyTheme(theme){
+    const r = document.documentElement.style;
+    r.setProperty('--panel', theme.panel);
+    r.setProperty('--panel-2', theme.panel2);
+    r.setProperty('--cream-2', theme.panel2);
+    r.setProperty('--gold', theme.gold);
+    r.setProperty('--cream', theme.ink);
+    r.setProperty('--ink', theme.ink);
+    r.setProperty('--ink-soft', theme.inkSoft);
+    r.setProperty('--active-text', theme.activeText);
+    r.setProperty('--dot-normal', theme.dotNormal);
+    r.setProperty('--dot-accent', theme.dotAccent);
+    document.body.style.background = theme.bg;
+    try{ localStorage.setItem(THEME_KEY, theme.id); }catch(e){}
+    document.querySelectorAll('.theme-swatch').forEach(el=>el.classList.toggle('active', el.dataset.id===theme.id));
+  }
+  function buildThemePicker(){
+    themePicker.innerHTML = THEMES.map(t=>`
+      <button class="theme-swatch" data-id="${t.id}">
+        <span class="chip"><span style="background:${t.bg}"></span><span style="background:${t.panel}"></span><span style="background:${t.gold}"></span></span>
+        <span class="label">${t.label}</span>
+      </button>`).join('');
+    themePicker.querySelectorAll('.theme-swatch').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const t = THEMES.find(x=>x.id===btn.dataset.id);
+        applyTheme(t);
+      });
+    });
+  }
+  buildThemePicker();
+  try{
+    const saved = localStorage.getItem(THEME_KEY);
+    if(saved){ const t = THEMES.find(x=>x.id===saved); if(t) applyTheme(t); }
+  }catch(e){}
+  themeBtn.addEventListener('click', ()=> themePicker.classList.toggle('hidden'));
+
+  /* ---------- Persisted settings ---------- */
+  const SETTINGS_KEY = 'metronomeSettingsV1';
+  let bpm = 100;
+  let beatsPerBar = 4;
+  let subdivision = 1; // number of clicks per beat (1 = just the main click)
+  function defaultBeatStates(n){
+    const arr = new Array(n).fill('normal');
+    if(n>0) arr[0] = 'accent';
+    return arr;
+  }
+  let beatStates = defaultBeatStates(beatsPerBar);
+  try{
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+    if(saved){
+      if(saved.bpm>=30 && saved.bpm<=250) bpm = saved.bpm;
+      if(saved.beatsPerBar>=1 && saved.beatsPerBar<=16) beatsPerBar = saved.beatsPerBar;
+      if(saved.subdivision>=1 && saved.subdivision<=16) subdivision = saved.subdivision;
+      if(Array.isArray(saved.beatStates) && saved.beatStates.length===beatsPerBar){
+        beatStates = saved.beatStates;
+      } else {
+        beatStates = defaultBeatStates(beatsPerBar);
+      }
+    }
+  }catch(e){}
+  function saveSettings(){
+    try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify({bpm, beatsPerBar, subdivision, beatStates})); }catch(e){}
+  }
+
+  /* ---------- Tempo label ---------- */
+  function tempoName(b){
+    if(b<=45) return 'Grave';
+    if(b<=60) return 'Largo';
+    if(b<=66) return 'Larghetto';
+    if(b<=76) return 'Adagio';
+    if(b<=92) return 'Andante';
+    if(b<=108) return 'Moderato';
+    if(b<=120) return 'Allegretto';
+    if(b<=156) return 'Allegro';
+    if(b<=176) return 'Vivace';
+    if(b<=200) return 'Presto';
+    return 'Prestissimo';
+  }
+
+  function refreshBpmUI(){
+    bpmNumber.textContent = bpm;
+    bpmSlider.value = bpm;
+    tempoLabel.textContent = tempoName(bpm);
+  }
+  function setBpm(v){
+    bpm = Math.max(30, Math.min(250, Math.round(v)));
+    refreshBpmUI();
+    saveSettings();
+  }
+  refreshBpmUI();
+
+  bpmSlider.addEventListener('input', ()=> setBpm(parseInt(bpmSlider.value,10)));
+  bpmMinus5.addEventListener('click', ()=> setBpm(bpm-5));
+  bpmMinus1.addEventListener('click', ()=> setBpm(bpm-1));
+  bpmPlus1.addEventListener('click', ()=> setBpm(bpm+1));
+  bpmPlus5.addEventListener('click', ()=> setBpm(bpm+5));
+
+  /* ---------- Tap tempo ---------- */
+  let tapTimes = [];
+  tapBtn.addEventListener('click', ()=>{
+    const now = performance.now();
+    if(tapTimes.length && now - tapTimes[tapTimes.length-1] > 2000) tapTimes = [];
+    tapTimes.push(now);
+    if(tapTimes.length>8) tapTimes.shift();
+    if(tapTimes.length>=2){
+      const intervals=[];
+      for(let i=1;i<tapTimes.length;i++) intervals.push(tapTimes[i]-tapTimes[i-1]);
+      const avgMs = intervals.reduce((a,b)=>a+b,0)/intervals.length;
+      setBpm(60000/avgMs);
+    }
+  });
+
+  /* ---------- Beats per bar & clicks per beat (dropdowns 1-16) ---------- */
+  function populateSelect(sel, max, current){
+    sel.innerHTML='';
+    for(let i=1;i<=max;i++){
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = i;
+      if(i===current) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+  populateSelect(beatsPerBarSelect, 16, beatsPerBar);
+  populateSelect(subdivisionSelect, 16, subdivision);
+
+  beatsPerBarSelect.addEventListener('change', ()=>{
+    beatsPerBar = parseInt(beatsPerBarSelect.value,10);
+    currentTick = 0;
+    beatStates = defaultBeatStates(beatsPerBar);
+    renderBeatDots();
+    saveSettings();
+  });
+  subdivisionSelect.addEventListener('change', ()=>{
+    subdivision = parseInt(subdivisionSelect.value,10);
+    currentTick = 0;
+    saveSettings();
+  });
+
+  /* ---------- Beat dots: clickable, cycle normal -> accent -> muted, and light up as they count ---------- */
+  function stateLabel(s){
+    return s==='accent' ? tr().beatAccent : (s==='muted' ? tr().beatMuted : tr().beatNormal);
+  }
+  function renderBeatDots(){
+    beatRow.innerHTML='';
+    for(let i=0;i<beatsPerBar;i++){
+      const state = beatStates[i] || 'normal';
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 'beat-dot state-'+state;
+      dot.dataset.beat = i;
+      dot.setAttribute('aria-label', tr().beatAria(i+1, stateLabel(state)));
+      if(state==='muted') dot.textContent = '🎤';
+      dot.addEventListener('click', ()=> cycleBeatState(i));
+      beatRow.appendChild(dot);
+    }
+  }
+  function cycleBeatState(i){
+    const order = ['normal','accent','muted'];
+    const cur = beatStates[i] || 'normal';
+    beatStates[i] = order[(order.indexOf(cur)+1) % order.length];
+    renderBeatDots();
+    saveSettings();
+  }
+  renderBeatDots();
+  function lightBeat(beatIndex){
+    const dots = Array.from(beatRow.children);
+    dots.forEach((d,i)=> d.classList.toggle('active', i===beatIndex));
+    setTimeout(()=>{
+      const d = beatRow.children[beatIndex];
+      if(d) d.classList.remove('active');
+    }, Math.max(60, (60000/bpm)*0.35));
+  }
+
+  /* ---------- Pendulum (real-metronome-style swinging dot, one beat = one swing) ---------- */
+  const PENDULUM_LEFT = '3%';
+  const PENDULUM_RIGHT = '97%';
+  let pendulumSide = 0; // 0 = left, 1 = right
+  function resetPendulum(){
+    pendulumSide = 0;
+    pendulumDot.style.transitionDuration = '0.25s';
+    pendulumDot.style.left = PENDULUM_LEFT;
+  }
+  resetPendulum();
+  function swingPendulum(){
+    const secondsPerBeat = 60.0/bpm;
+    pendulumDot.style.transitionDuration = secondsPerBeat + 's';
+    pendulumSide = pendulumSide===0 ? 1 : 0;
+    pendulumDot.style.left = pendulumSide===0 ? PENDULUM_LEFT : PENDULUM_RIGHT;
+  }
+
+  /* ---------- Screen wake lock: keep the phone screen on while this page is open ---------- */
+  let wakeLock = null;
+  async function requestWakeLock(){
+    try{
+      if('wakeLock' in navigator){
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', ()=>{ wakeLock=null; });
+      }
+    }catch(e){}
+  }
+  function releaseWakeLock(){
+    if(wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; }
+  }
+  requestWakeLock();
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState==='visible' && !wakeLock) requestWakeLock();
+  });
+
+  /* ---------- Audio scheduler (lookahead technique for drift-free timing) ---------- */
+  let audioCtx=null;
+  let playing=false;
+  let currentTick=0;      // index within the bar*subdivision cycle
+  let nextNoteTime=0.0;   // audioCtx time of the next scheduled tick
+  let timerID=null;
+  let notesInQueue=[];    // {tick, time} pairs, drained by the visual draw loop
+  const LOOKAHEAD_MS=25.0;
+  const SCHEDULE_AHEAD=0.12; // seconds
+
+  function ensureAudioCtx(){
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  function totalTicks(){ return beatsPerBar*subdivision; }
+
+  function scheduleClick(tick, time){
+    const isMainBeat = (tick % subdivision === 0);
+    const beatIndex = Math.floor(tick/subdivision);
+    const state = beatStates[beatIndex] || 'normal';
+    if(state!=='muted'){
+      const isAccent = isMainBeat && state==='accent';
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = isAccent ? 1500 : (isMainBeat ? 1000 : 700);
+      const peak = isAccent ? 0.9 : (isMainBeat ? 0.6 : 0.28);
+      gain.gain.setValueAtTime(0.0001, time);
+      gain.gain.linearRampToValueAtTime(peak, time+0.002);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time+0.05);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(time);
+      osc.stop(time+0.06);
+    }
+    notesInQueue.push({ tick, time });
+  }
+
+  function advanceNote(){
+    const secondsPerTick = (60.0/bpm)/subdivision;
+    nextNoteTime += secondsPerTick;
+    currentTick = (currentTick+1) % totalTicks();
+  }
+
+  function scheduler(){
+    while(nextNoteTime < audioCtx.currentTime + SCHEDULE_AHEAD){
+      scheduleClick(currentTick, nextNoteTime);
+      advanceNote();
+    }
+    timerID = setTimeout(scheduler, LOOKAHEAD_MS);
+  }
+
+  function drawLoop(){
+    if(!playing) return;
+    const currentTime = audioCtx.currentTime;
+    while(notesInQueue.length && notesInQueue[0].time < currentTime){
+      const note = notesInQueue.shift();
+      if(note.tick % subdivision === 0){
+        const beatIndex = Math.floor(note.tick/subdivision) % beatsPerBar;
+        lightBeat(beatIndex);
+        swingPendulum();
+      }
+    }
+    requestAnimationFrame(drawLoop);
+  }
+
+  function startMetronome(){
+    ensureAudioCtx();
+    playing = true;
+    currentTick = 0;
+    notesInQueue = [];
+    nextNoteTime = audioCtx.currentTime + 0.05;
+    playBtn.textContent = '■';
+    playBtn.classList.add('playing');
+    requestWakeLock();
+    scheduler();
+    requestAnimationFrame(drawLoop);
+  }
+  function stopMetronome(){
+    playing = false;
+    clearTimeout(timerID);
+    playBtn.textContent = '▶';
+    playBtn.classList.remove('playing');
+    Array.from(beatRow.children).forEach(d=>d.classList.remove('active'));
+    resetPendulum();
+  }
+  playBtn.addEventListener('click', ()=>{
+    if(playing) stopMetronome(); else startMetronome();
+  });
+
+  /* ---------- App shell integration (added for merged app) ---------- */
+  window.addEventListener('message', (e)=>{
+    const d = e.data;
+    if(!d || typeof d !== 'object') return;
+    if(d.type === 'app:theme'){
+      const t = THEMES.find(x=>x.id===d.themeId);
+      if(t) applyTheme(t);
+    }
+    if(d.type === 'app:pause'){
+      if(playing) stopMetronome();
+      releaseWakeLock();
+    }
+    if(d.type === 'app:resume'){
+      requestWakeLock();
+    }
+    if(d.type === 'app:lang' && (['pl','en','de','fr','es','pt'].includes(d.value))){
+      currentLang = d.value;
+      try{ localStorage.setItem('appLangV1', currentLang); }catch(e){}
+      applyI18n();
+    }
+  });
+  applyI18n(); // apply whatever language was already stored, in case it's not the default
+})();
+</script>
+</body>
+</html>

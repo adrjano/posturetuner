@@ -1,0 +1,1931 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Postawa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wood-dark:#1B130E;
+    --wood-mid:#3A2A1E;
+    --panel:#1E2226;
+    --panel-2:#2E3538;
+    --cream:#FFFFFF;
+    --cream-2:#2E3538;
+    --gold:#C56A3B;
+    --active-text:#1A1310;
+    --ok:#3ECF7E;
+    --ok-bg:rgba(62,207,126,0.16);
+    --bad:#F2564A;
+    --bad-bg:rgba(242,86,74,0.16);
+    --ink:#FFFFFF;
+    --ink-soft:#B7C2C6;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#14171A;
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    font-size:18px;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:1180px; margin:0 auto; padding:24px 16px 60px; }
+  header{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap; }
+  h1{ font-family:'Fraunces',serif; font-optical-sizing:auto; font-weight:700; font-size:clamp(34px,5.5vw,48px); margin:0; color:var(--cream); letter-spacing:-0.01em; }
+  h1 span{color:var(--gold);}
+  .subtitle{ color:var(--ink-soft); font-size:16px; max-width:420px; line-height:1.5; }
+  .layout{ display:grid; grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr); gap:18px; }
+  @media (max-width:880px){ .layout{grid-template-columns:1fr;} }
+  @media (max-width:640px){
+    .wrap{ padding-left:2px; padding-right:2px; }
+    .instrument-frame{ padding:0 !important; border-radius:0 !important; }
+    .video-stage{ border-radius:0 !important; }
+    header, .mode-switch, .panel{ padding-left:6px; padding-right:6px; }
+    .mode-switch button{ font-size:14px; padding:9px 14px; }
+    .rosette{ width:110px; height:110px; }
+    .rosette-num .n{ font-size:64px; }
+    #modeIndicator{ display:none; }
+    .btn-long{ display:none; }
+  }
+
+  .mode-switch{
+    display:flex; gap:6px; background:var(--panel); padding:6px; border-radius:16px; margin-bottom:14px; width:fit-content;
+    border:1px solid var(--panel-2); flex-wrap:wrap;
+  }
+  .mode-switch button{
+    border:none; background:transparent; padding:10px 20px; border-radius:999px; font-weight:600; font-size:16px; cursor:pointer; color:var(--ink-soft);
+  }
+  .mode-switch button.active{ background:var(--gold); color:var(--active-text); box-shadow:0 2px 10px -2px rgba(0,0,0,.35); }
+  #levelBtn{ margin-left:4px; }
+
+  .instrument-frame{
+    position:relative;
+    background:linear-gradient(160deg,var(--wood-dark),var(--wood-mid));
+    border-radius:28px; padding:12px;
+    box-shadow:0 18px 40px -18px rgba(59,42,32,0.55);
+  }
+  .video-stage{ position:relative; border-radius:18px; overflow:hidden; aspect-ratio:3/4; background:#1c1410; }
+  .video-stage.pseudo-fullscreen{
+    position:fixed; inset:0; z-index:9999; border-radius:0; aspect-ratio:auto; width:100vw; height:100vh;
+  }
+  video, canvas{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  video{ transform:scaleX(-1); }
+  canvas{ transform:scaleX(-1); }
+
+  .veil{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px;
+    background:rgba(28,20,16,0.88); color:var(--cream); text-align:center; padding:24px; font-size:15px; z-index:5;
+  }
+  .veil.hidden{display:none;}
+  .btn{ font-family:'Inter',sans-serif; font-weight:600; font-size:16px; border:none; border-radius:999px; padding:11px 20px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
+  .btn-primary{ background:var(--gold); color:var(--active-text); }
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 18px -8px rgba(201,162,39,.6);}
+  .btn-ghost{ background:transparent; border:1.5px solid rgba(246,241,231,.5); color:var(--cream); }
+
+  .top-controls{
+    position:absolute; top:10px; right:10px; z-index:6; display:flex; gap:6px;
+  }
+  .icon-btn{
+    background:rgba(28,20,16,0.55); color:var(--cream); border:none; border-radius:10px;
+    width:38px;height:38px; font-size:16px; cursor:pointer; display:flex;align-items:center;justify-content:center;
+  }
+
+  .foot-reminder{
+    position:absolute; left:8px; right:8px; bottom:10px;
+    background:rgba(230,72,58,0.96); color:#fff; padding:7px 12px; border-radius:12px;
+    font-size:11.5px; font-weight:600; display:none; z-index:4; text-align:center;
+    line-height:1.35; max-width:100%;
+  }
+  .foot-reminder.show{display:block;}
+
+  .angle-badge{
+    position:absolute; z-index:4; background:rgba(28,20,16,0.75); color:var(--cream);
+    padding:4px 10px; border-radius:8px; font-size:11.5px; font-weight:700; pointer-events:none;
+    transform:translate(-50%,-50%);
+  }
+
+  .controls-row{ display:flex; gap:8px; justify-content:center; margin-top:12px; flex-wrap:wrap; }
+  .controls-row .btn{ background:var(--panel-2); color:var(--cream); font-size:15px; padding:11px 18px;}
+  .controls-row .btn.accent{ background:var(--gold); color:var(--active-text); }
+  .controls-row .btn.danger{ background:transparent; color:var(--bad); border:1.5px solid var(--bad); }
+
+  .speech-banner{
+    margin-top:12px; background:var(--panel); border:1px solid var(--panel-2); color:var(--cream); border-radius:14px; padding:12px 16px;
+    font-size:17px; min-height:20px; display:flex; align-items:center; gap:10px;
+  }
+  .speech-banner .dot{ width:8px;height:8px;border-radius:50%; background:var(--gold); flex:none; }
+
+  /* --- Calibration overlay (cards float, background stays visible) --- */
+  .calib-overlay{
+    position:absolute; inset:0; z-index:8; display:flex; align-items:center; justify-content:center;
+    padding:20px; pointer-events:none;
+  }
+  .calib-overlay.hidden{display:none;}
+  .calib-card{
+    background:rgba(20,14,10,0.97); color:var(--cream); border-radius:16px; padding:20px;
+    max-width:320px; width:100%; max-height:90%; overflow-y:auto; text-align:center; pointer-events:auto;
+  }
+  @media (max-width:420px){
+    .calib-card{ padding:14px; max-height:94%; }
+    .shots-grid{ gap:5px; }
+  }
+  .countdown-badge{
+    position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:7;
+    background:rgba(28,20,16,0.72); color:var(--cream); padding:7px 16px; border-radius:999px;
+    font-family:Arial, sans-serif; font-weight:700; font-size:16px; display:flex; align-items:center; gap:6px;
+    pointer-events:none;
+  }
+  .countdown-badge.hidden{display:none;}
+  .debug-badge{
+    position:absolute; bottom:10px; left:8px; right:8px; z-index:6;
+    background:rgba(28,20,16,0.85); color:var(--cream); padding:6px 10px; border-radius:10px;
+    font-size:11px; text-align:center; pointer-events:none;
+  }
+  .debug-badge.bad{ background:rgba(230,72,58,0.9); }
+  .debug-badge.hidden{ display:none; }
+
+  .flash{
+    position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:9;
+  }
+  .flash.go{ animation:flashPop .35s ease-out; }
+  @keyframes flashPop{ 0%{opacity:0;} 12%{opacity:0.9;} 100%{opacity:0;} }
+  .calib-hint{ font-size:11.5px; color:#ffb3a8; margin-top:8px; min-height:16px; }
+  .shot-card.no-metrics::after{
+    content:"brak sylwetki"; position:absolute; bottom:2px; left:0; right:0; text-align:center;
+    background:rgba(230,72,58,.85); color:#fff; font-size:8.5px; padding:1px 0;
+  }
+  .shots-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; width:100%; }
+  .shot-card{
+    border:2px solid transparent; border-radius:12px; overflow:hidden; cursor:pointer; position:relative; background:#000;
+  }
+  .shot-card img{ width:100%; display:block; }
+  .shot-card.chosen{ border-color:var(--ok); }
+  .shot-card .num{ position:absolute; top:4px; left:4px; background:rgba(0,0,0,.6); color:#fff; font-size:10px; padding:1px 6px; border-radius:6px; }
+  .shot-card.empty{ display:flex; align-items:center; justify-content:center; color:rgba(246,241,231,.35); font-size:11px; aspect-ratio:3/4; }
+
+  /* --- Side panel --- */
+  .panel{ display:flex; flex-direction:column; gap:12px; }
+  .card{ background:var(--panel); border-radius:var(--radius); padding:16px; box-shadow:0 10px 26px -18px rgba(0,0,0,0.5); border:1px solid var(--panel-2); }
+  .card h3{ font-family:'Fraunces',serif; font-size:19px; font-weight:600; margin:0 0 8px; color:var(--cream); }
+
+  .rosette{ width:130px;height:130px; margin:0 auto; position:relative; }
+  .rosette svg{width:100%;height:100%;transform:rotate(-90deg);}
+  .rosette-bg{stroke:var(--cream-2);}
+  .rosette-fg{ stroke:var(--ok); stroke-linecap:round; transition:stroke-dashoffset .4s ease, stroke .4s ease; }
+  .rosette-num{ position:absolute;inset:0; display:flex;align-items:center;justify-content:center; flex-direction:column; }
+  .rosette-num .n{font-family:'Fraunces',serif;font-size:78px;font-weight:700;color:var(--cream);line-height:1;}
+
+  .rule-list{ display:flex; flex-direction:column; gap:7px; }
+  .rule{
+    background:var(--panel); border-radius:14px; padding:11px 13px; display:flex; align-items:center; gap:9px;
+    box-shadow:0 6px 16px -14px rgba(0,0,0,.4); border-left:4px solid var(--cream-2); border:1px solid var(--panel-2); border-left-width:4px;
+    transition:border-color .25s ease, background .25s ease;
+  }
+  .rule.ok{border-left-color:var(--ok); background:var(--ok-bg);}
+  .rule.bad{border-left-color:var(--bad); background:var(--bad-bg);}
+  .rule.unavailable{ opacity:.5; }
+  .rule .status-dot{ width:10px;height:10px;border-radius:50%; background:#5a4c3d;flex:none; }
+  .rule.ok .status-dot{background:var(--ok);}
+  .rule.bad .status-dot{background:var(--bad);}
+  .rule-text{flex:1;}
+  .rule-text .name{font-weight:600;font-size:17px; color:var(--cream);}
+  .rule-text .hint{font-size:14px;color:var(--ink-soft);margin-top:1px;}
+  .rule.experimental .rule-text .name::after{ content:" · beta"; font-size:10.5px; font-weight:600; color:var(--ink-soft); }
+
+  .calib-status{ font-size:15px; color:var(--ink-soft); line-height:1.5; }
+  .calib-status b{color:var(--cream);}
+
+  .mode-indicator{
+    display:flex; align-items:center; gap:8px; padding:10px 13px; border-radius:12px; margin-bottom:10px;
+    font-size:16px; font-weight:600; border:1px solid var(--panel-2);
+  }
+  .mode-indicator.generic{ background:rgba(217,175,62,0.12); color:var(--gold); }
+  .mode-indicator.personal{ background:var(--ok-bg); color:var(--ok); }
+  .mode-indicator .dot2{ width:9px;height:9px;border-radius:50%; background:currentColor; flex:none; }
+
+  .onboarding{
+    position:fixed; inset:0; z-index:50; background:rgba(10,7,5,0.88);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .onboarding.hidden{ display:none; }
+  .onboarding-card{
+    background:var(--panel); border:1px solid var(--panel-2); border-radius:20px; padding:28px 26px;
+    max-width:420px; width:100%; color:var(--cream);
+  }
+  .onboarding-card h2{ font-family:'Fraunces',serif; font-size:24px; margin:0 0 14px; }
+  .onboarding-card ol{ padding-left:20px; margin:0 0 20px; display:flex; flex-direction:column; gap:10px; font-size:16.5px; line-height:1.5; color:var(--ink-soft); }
+  .onboarding-card li b{ color:var(--cream); }
+  .onboarding-card .btn{ width:100%; }
+
+  .theme-picker{
+    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; padding:10px; background:var(--panel);
+    border:1px solid var(--panel-2); border-radius:14px; width:fit-content;
+  }
+  .theme-picker.hidden{ display:none; }
+  .theme-swatch{
+    display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; background:none; border:none; padding:4px;
+  }
+  .theme-swatch .chip{ width:40px; height:40px; border-radius:10px; border:2px solid transparent; display:flex; overflow:hidden; }
+  .theme-swatch .chip span{ flex:1; height:100%; }
+  .theme-swatch.active .chip{ border-color:var(--cream); }
+  .theme-swatch .label{ font-size:11px; color:var(--ink-soft); max-width:60px; text-align:center; line-height:1.2; }
+
+  .sensitivity-row{
+    display:flex; align-items:center; gap:12px; background:var(--panel); border:1px solid var(--panel-2);
+    border-radius:14px; padding:10px 16px; margin-bottom:14px; flex-wrap:wrap;
+  }
+  .sensitivity-label{ font-size:15px; font-weight:600; color:var(--ink); white-space:nowrap; }
+  .sensitivity-value{ font-size:14px; color:var(--gold); font-weight:600; min-width:120px; }
+  #sensitivitySlider{ flex:1; min-width:140px; accent-color:var(--gold); height:6px; cursor:pointer; }
+
+  .support-row{
+    display:flex; align-items:center; gap:12px; background:var(--panel); border:1px solid var(--panel-2);
+    border-radius:14px; padding:10px 16px; margin-bottom:14px; flex-wrap:wrap;
+  }
+  .support-options{ display:flex; gap:6px; background:var(--panel-2); padding:4px; border-radius:12px; }
+  .support-options button{
+    border:none; background:transparent; padding:8px 14px; border-radius:9px; font-weight:600; font-size:14px; cursor:pointer; color:var(--ink-soft);
+  }
+  .support-options button.active{ background:var(--gold); color:var(--active-text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 data-i18n="title">Postawa</h1>
+    </div>
+    <button class="icon-btn" id="helpBtn" style="position:static;background:var(--panel);color:var(--cream);" title="Jak to działa?" data-i18n-title="help.title">?</button>
+  </header>
+
+  <div class="onboarding hidden" id="onboarding">
+    <div class="onboarding-card">
+      <h2 data-i18n="onboarding.title">Witaj! 👋</h2>
+      <ol>
+        <li data-i18n-html="onboarding.li1">Usiądź z gitarą <b>na wprost telefonu</b>, ok. 1,5–2 m od kamery.</li>
+        <li data-i18n-html="onboarding.li2"><b>Wzorzec ogólny</b> działa od razu — sprawdza barki, plecy, głowę i (przy podnóżku) ustawienie kolana według ogólnych zasad postawy. W ustawieniach wybierz, czy grasz z <b>podnóżkiem</b> czy z <b>podgitarnikiem</b> — przy podgitarniku reguła kolana jest wyłączona.</li>
+        <li data-i18n-html="onboarding.li3"><b>Moja kalibracja</b> (4 zdjęcia co 5 sekund) dodaje dokładniejsze reguły: kąt gryfu, łokieć, nadgarstek, palce.</li>
+        <li data-i18n="onboarding.li4">Aplikacja mówi na głos, co poprawić — na żywo, podczas gry.</li>
+      </ol>
+      <button class="btn btn-primary" id="onboardingSkip" data-i18n="onboarding.skip">Zaczynajmy</button>
+    </div>
+  </div>
+
+  <div class="mode-switch">
+    <button id="modeGenericBtn" class="active" data-i18n="mode.generic">Wzorzec ogólny</button>
+    <button id="modePersonalBtn" data-i18n="mode.personal">Moja kalibracja</button>
+    <button id="levelBtn" title="Szybkie wyzerowanie poziomu, gdy telefon stoi krzywo" data-i18n-title="mode.levelTitle" data-i18n="mode.level">📐 Wypoziomuj</button>
+    <button id="calibrateBtn"><span data-i18n="mode.calibrate">🎯 Kalibruj</span><span class="btn-long" data-i18n="mode.calibrateLong"> moją postawę</span></button>
+    <button id="voiceToggle" disabled data-i18n="mode.voiceOn">🔊 Głos: włączony</button>
+    <button id="themeBtn" title="Wypróbuj inne kolory" style="display:none">🎨 Motyw</button>
+  </div>
+
+  <div class="theme-picker hidden" id="themePicker" style="display:none"></div>
+
+  <div class="sensitivity-row">
+    <span class="sensitivity-label" data-i18n="sensitivity.label">🎚️ Czułość oceny</span>
+    <input type="range" id="sensitivitySlider" min="1" max="5" step="1" value="3">
+    <span class="sensitivity-value" id="sensitivityValue">Standardowa</span>
+  </div>
+
+  <div class="support-row">
+    <div class="support-options">
+      <button id="supportStoolBtn" class="active" data-i18n="support.stool">Podnóżek</button>
+      <button id="supportGuitarBtn" data-i18n="support.guitar">Podgitarnik</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="instrument-frame">
+        <div class="video-stage" id="stage">
+          <video id="video" playsinline muted></video>
+          <canvas id="overlay"></canvas>
+
+          <div class="top-controls">
+            <button class="icon-btn" id="fullscreenBtn" title="Pełny ekran" data-i18n-title="fullscreen">⛶</button>
+          </div>
+
+          <div class="foot-reminder" id="footReminder" data-i18n="footReminder">Nie widzę lewej stopy — odsuń telefon / popraw kadr</div>
+
+          <div class="countdown-badge hidden" id="countdownBadge">
+            <span id="countdownNum">5</span><span style="font-weight:500;opacity:.85;">· <span data-i18n="calib.shotLabel">zdjęcie</span> <span id="shotIndex">1</span>/4</span>
+          </div>
+
+          <div class="debug-badge hidden" id="debugBadge"></div>
+
+          <div class="flash" id="flashEl"></div>
+
+          <div class="veil" id="veil">
+            <div style="font-family:'Fraunces',serif;font-size:20px;" data-i18n="veil.heading">Włącz kamerę, żeby zacząć</div>
+            <div id="veilMsg" style="max-width:320px;font-size:16px;opacity:.85;" data-i18n="veil.msg">Usiądź tak, jak zwykle grasz, z gitarą, na wprost telefonu, w odległości ok. 1,5–2 m.</div>
+            <button class="btn btn-primary" id="startBtn" data-i18n="veil.startBtn">Włącz kamerę</button>
+          </div>
+
+          <div class="calib-overlay hidden" id="calibOverlay">
+            <div class="calib-card" id="calibStage1">
+              <div style="font-family:'Fraunces',serif;font-size:19px;margin-bottom:6px;" data-i18n="calib.stage1title">Kalibracja postawy</div>
+              <div style="max-width:280px;font-size:13px;opacity:.85;margin-bottom:14px;" data-i18n="calib.stage1desc">Ustaw się w swojej najlepszej postawie z gitarą. Zrobimy 4 zdjęcia co 5 sekund — zobaczysz siebie na żywo, licznik będzie na górze ekranu. Na końcu wybierzesz najlepsze.</div>
+              <button class="btn btn-primary" id="calibStartBtn" data-i18n="calib.start">Rozpocznij serię zdjęć</button>
+              <div style="margin-top:8px;"><button class="btn btn-ghost" id="calibCancelBtn" data-i18n="calib.cancel">Anuluj</button></div>
+            </div>
+            <div class="calib-card" id="calibStage3" style="display:none;">
+              <div style="font-family:'Fraunces',serif;font-size:17px;margin-bottom:10px;" data-i18n="calib.stage3title">Wybierz najlepsze zdjęcie</div>
+              <div class="shots-grid" id="shotsGrid"></div>
+              <div class="calib-hint" id="calibHint"></div>
+              <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;">
+                <button class="btn btn-ghost" id="retakeBtn" data-i18n="calib.retake">Zrób nową serię</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="speech-banner"><span class="dot"></span><span id="speechText" data-i18n="speech.default">Włącz kamerę, aby rozpocząć.</span></div>
+    </div>
+
+    <div class="panel">
+      <div class="mode-indicator generic" id="modeIndicator">
+        <span class="dot2"></span><span id="modeIndicatorText" data-i18n="mode.indicatorGeneric">Tryb: Wzorzec ogólny</span>
+      </div>
+
+      <div class="card" style="text-align:center;">
+        <h3 data-i18n="score.title">Wynik postawy</h3>
+        <div class="rosette">
+          <svg viewBox="0 0 120 120">
+            <circle class="rosette-bg" cx="60" cy="60" r="50" fill="none" stroke-width="10"/>
+            <circle class="rosette-fg" id="rosetteFg" cx="60" cy="60" r="50" fill="none" stroke-width="10" stroke-dasharray="314" stroke-dashoffset="314"/>
+          </svg>
+          <div class="rosette-num"><div class="n" id="scoreNum">–</div></div>
+        </div>
+        <div class="calib-status" id="calibStatus" style="margin-top:10px;" data-i18n="calib.none">bez kalibracji</div>
+        <button class="btn danger" id="resetCalibBtn" style="margin-top:10px;font-size:12px;padding:8px 14px;display:none;" data-i18n="calib.resetBtn">Resetuj kalibrację</button>
+      </div>
+
+      <div class="rule-list" id="ruleList"></div>
+
+      <div class="card" id="debugPanel" style="padding:0;overflow:hidden;display:none;">
+        <button id="debugToggle" style="width:100%;text-align:left;background:none;border:none;color:var(--ink-soft);font-size:13px;font-weight:600;padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+          <span data-i18n="debug.toggle">🔧 Podgląd liczb (debug)</span><span id="debugArrow">▸</span>
+        </button>
+        <div id="debugNumbersWrap" style="display:none;padding:0 16px 14px;font-family:monospace;font-size:11.5px;line-height:1.7;white-space:pre-wrap;color:var(--ink-soft);">
+          <div id="debugNumbers" data-i18n="debug.waiting">czekam na dane...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { PoseLandmarker, HandLandmarker, FilesetResolver } from "../vendor/mediapipe/vision_bundle.mjs";
+
+/* ---------- i18n ---------- */
+const I18N = {
+  pl: {
+    title:'Postawa', 'help.title':'Jak to działa?',
+    'onboarding.title':'Witaj! 👋',
+    'onboarding.li1':'Usiądź z gitarą <b>na wprost telefonu</b>, ok. 1,5–2 m od kamery.',
+    'onboarding.li2':'<b>Wzorzec ogólny</b> działa od razu — sprawdza barki, plecy, głowę i (przy podnóżku) ustawienie kolana według ogólnych zasad postawy. W ustawieniach wybierz, czy grasz z <b>podnóżkiem</b> czy z <b>podgitarnikiem</b> — przy podgitarniku reguła kolana jest wyłączona.',
+    'onboarding.li3':'<b>Moja kalibracja</b> (4 zdjęcia co 5 sekund) dodaje dokładniejsze reguły: kąt gryfu, łokieć, nadgarstek, palce.',
+    'onboarding.li4':'Aplikacja mówi na głos, co poprawić — na żywo, podczas gry.',
+    'onboarding.skip':'Zaczynajmy',
+    'mode.generic':'Wzorzec ogólny', 'mode.personal':'Moja kalibracja',
+    'mode.level':'📐 Wypoziomuj', 'mode.levelDone':'📐 Wypoziomowano ✓',
+    'mode.levelTitle':'Szybkie wyzerowanie poziomu, gdy telefon stoi krzywo',
+    'mode.calibrate':'🎯 Kalibruj', 'mode.calibrateLong':' moją postawę',
+    'mode.voiceOn':'🔊 Głos: włączony', 'mode.voiceOff':'🔇 Głos: wyłączony',
+    'mode.indicatorGeneric':'Tryb: Wzorzec ogólny', 'mode.indicatorPersonal':'Tryb: Moja kalibracja ✓',
+    'sensitivity.label':'🎚️ Czułość oceny',
+    'sens.veryGentle':'Bardzo łagodna', 'sens.gentle':'Łagodna', 'sens.standard':'Standardowa',
+    'sens.demanding':'Wymagająca', 'sens.strict':'Surowa',
+    'support.stool':'Podnóżek', 'support.guitar':'Podgitarnik',
+    fullscreen:'Pełny ekran',
+    footReminder:'Nie widzę lewej stopy — odsuń telefon / popraw kadr',
+    'calib.shotLabel':'zdjęcie',
+    'veil.heading':'Włącz kamerę, żeby zacząć',
+    'veil.msg':'Usiądź tak, jak zwykle grasz, z gitarą, na wprost telefonu, w odległości ok. 1,5–2 m.',
+    'veil.startBtn':'Włącz kamerę', 'veil.loading':'Ładowanie modelu...', 'veil.retry':'Spróbuj ponownie',
+    'calib.stage1title':'Kalibracja postawy',
+    'calib.stage1desc':'Ustaw się w swojej najlepszej postawie z gitarą. Zrobimy 4 zdjęcia co 5 sekund — zobaczysz siebie na żywo, licznik będzie na górze ekranu. Na końcu wybierzesz najlepsze.',
+    'calib.start':'Rozpocznij serię zdjęć', 'calib.cancel':'Anuluj',
+    'calib.stage3title':'Wybierz najlepsze zdjęcie', 'calib.retake':'Zrób nową serię',
+    'calib.noPersonDetected':'To zdjęcie nie ma wykrytej sylwetki — wybierz inne albo zrób nową serię.',
+    'calib.none':'bez kalibracji', 'calib.manual':'wypoziomowany ręcznie',
+    'calib.resetBtn':'Resetuj kalibrację',
+    'calib.savedPrefix':'zapisana ',
+    'speech.default':'Włącz kamerę, aby rozpocząć.',
+    'speech.needCamera':'Najpierw włącz kamerę.',
+    'speech.calibReset':'Skasowano zapisaną kalibrację.',
+    'speech.waitForBody':'Poczekaj, aż zobaczę Twoją sylwetkę.',
+    'speech.levelSaved':'Zapisano punkt odniesienia — teraz to Twoja obecna postawa liczy się jako poprawna.',
+    'speech.greatPosture':'Świetna postawa — tak trzymaj!',
+    'score.title':'Wynik postawy',
+    'debug.toggle':'🔧 Podgląd liczb (debug)', 'debug.waiting':'czekam na dane...',
+    'rule.shoulders':'Barki na równej wysokości',
+    'rule.lean':'Kręgosłup prosto, bez przechyłu',
+    'rule.head':'Głowa wyprostowana',
+    'rule.knee':'Lewe kolano nie zapada się do środka',
+    'rule.neck':'Kąt gryfu / wysokość główki',
+    'rule.elbow':'Prawy łokieć na krawędzi pudła',
+    'rule.wrist':'Nadgarstek lewej ręki prosty',
+    'rule.thumb':'Kciuk nie wystaje ponad gryf',
+    'rule.curlL':'Palce lewej dłoni zaokrąglone',
+    'rule.curlR':'Palce prawej dłoni zaokrąglone',
+    'rule.arms':'Ręce w pozycji gry',
+    'rule.elbowL':'Lewy łokieć swobodnie, z dala od ciała',
+    'rule.unavailable':'niedostępne w tym trybie',
+    'rule.requiresCalib':'wymaga kalibracji',
+    'rule.ok':'w porządku',
+    'msg.shoulders.rightDown':'prawy bark opadł', 'msg.shoulders.leftDown':'lewy bark opadł',
+    'msg.lean.right':'przechył w prawo', 'msg.lean.left':'przechył w lewo',
+    'msg.head.bad':'głowa przechylona / opuszczona',
+    'msg.knee.ok':'kolano ułożone prawidłowo', 'msg.knee.bad':'lewe kolano zapada się do środka',
+    'msg.knee.notNeeded':'niepotrzebne z podgitarnikiem',
+    'msg.arms.bad':'ręce opadły / nie w pozycji gry',
+    'msg.elbowL.tucked':'łokieć przyciśnięty do ciała', 'msg.elbowL.straight':'ręka wyprostowana — zegnij łokieć',
+    'msg.neck.low':'gryf zbyt nisko', 'msg.neck.high':'gryf zbyt wysoko',
+    'msg.elbow.ok':'oparty prawidłowo', 'msg.elbow.bad':'zsunął się z krawędzi pudła',
+    'msg.wrist.ok':'prosty', 'msg.wrist.bad':'zgięty',
+    'msg.thumb.ok':'w dobrej pozycji', 'msg.thumb.bad':'wystaje nad gryf',
+    'msg.curl.ok':'zaokrąglone', 'msg.curl.bad':'wyprostowane / spięte',
+    'msg.noLeftHandCalib':'kalibracja bez lewej dłoni — spróbuj ponownie',
+    'msg.noLeftHandNow':'nie widzę teraz lewej dłoni',
+    'msg.noRightHandNow':'nie widzę prawej dłoni',
+    voiceGood1:'Wszystko dobrze, tak trzymaj!', voiceGood2:'Świetna postawa!', voiceGood3:'Bardzo dobrze — kontynuuj tak dalej.',
+    'speech.calibSaved':'Zapisano wzorcową postawę',
+    idToPhrase: {
+      shoulders:'Wyrównaj barki, jeden jest wyżej', lean:'Wyprostuj się, nie przechylaj tułowia',
+      head:'Unieś głowę, nie garb się nad gryfem', knee:'Kolano prosto',
+      arms:'Ułóż ręce w pozycji gry, nie opuszczaj ich',
+      neck:'Popraw wysokość gryfu gitary', elbow:'Oprzyj prawe przedramię na krawędzi pudła',
+      wrist:'Wyprostuj nadgarstek lewej ręki', thumb:'Opuść kciuk poniżej gryfu',
+      curlL:'Zaokrąglij palce lewej dłoni', curlR:'Zaokrąglij palce prawej dłoni',
+      elbowL:'Odsuń łokieć od ciała i lekko go zegnij',
+    },
+    dateLocale:'pl-PL', unknownError:'Nieznany błąd.',
+  },
+  en: {
+    title:'Posture', 'help.title':'How does this work?',
+    'onboarding.title':'Welcome! 👋',
+    'onboarding.li1':'Sit with your guitar <b>facing the phone</b>, about 1.5–2 m from the camera.',
+    'onboarding.li2':'<b>Generic pattern</b> works right away — it checks shoulders, back, head and (with a footstool) knee position against general posture guidelines. In settings, choose whether you play with a <b>footstool</b> or a <b>guitar support</b> — the knee rule is disabled with a guitar support.',
+    'onboarding.li3':'<b>My calibration</b> (4 photos, 5 seconds apart) adds more precise rules: neck angle, elbow, wrist, fingers.',
+    'onboarding.li4':'The app tells you out loud what to fix — live, while you play.',
+    'onboarding.skip':"Let's go",
+    'mode.generic':'Generic pattern', 'mode.personal':'My calibration',
+    'mode.level':'📐 Level', 'mode.levelDone':'📐 Leveled ✓',
+    'mode.levelTitle':'Quickly zero out the level when the phone isn\'t sitting straight',
+    'mode.calibrate':'🎯 Calibrate', 'mode.calibrateLong':' my posture',
+    'mode.voiceOn':'🔊 Voice: on', 'mode.voiceOff':'🔇 Voice: off',
+    'mode.indicatorGeneric':'Mode: Generic pattern', 'mode.indicatorPersonal':'Mode: My calibration ✓',
+    'sensitivity.label':'🎚️ Sensitivity',
+    'sens.veryGentle':'Very gentle', 'sens.gentle':'Gentle', 'sens.standard':'Standard',
+    'sens.demanding':'Demanding', 'sens.strict':'Strict',
+    'support.stool':'Footstool', 'support.guitar':'Guitar support',
+    fullscreen:'Fullscreen',
+    footReminder:'I can\'t see your left foot — move the phone / adjust the frame',
+    'calib.shotLabel':'photo',
+    'veil.heading':'Turn on the camera to get started',
+    'veil.msg':'Sit the way you normally play, with your guitar, facing the phone, about 1.5–2 m away.',
+    'veil.startBtn':'Turn on camera', 'veil.loading':'Loading model...', 'veil.retry':'Try again',
+    'calib.stage1title':'Posture calibration',
+    'calib.stage1desc':'Get into your best posture with the guitar. We\'ll take 4 photos, 5 seconds apart — you\'ll see yourself live, with a counter at the top of the screen. You\'ll pick the best one at the end.',
+    'calib.start':'Start the photo series', 'calib.cancel':'Cancel',
+    'calib.stage3title':'Pick the best photo', 'calib.retake':'Take a new series',
+    'calib.noPersonDetected':'No person detected in this photo — pick another one or take a new series.',
+    'calib.none':'not calibrated', 'calib.manual':'manually leveled',
+    'calib.resetBtn':'Reset calibration',
+    'calib.savedPrefix':'saved ',
+    'speech.default':'Turn on the camera to get started.',
+    'speech.needCamera':'Turn on the camera first.',
+    'speech.calibReset':'Saved calibration cleared.',
+    'speech.waitForBody':'Wait until I can see you.',
+    'speech.levelSaved':'Reference point saved — your current posture now counts as correct.',
+    'speech.greatPosture':'Great posture — keep it up!',
+    'score.title':'Posture score',
+    'debug.toggle':'🔧 Number preview (debug)', 'debug.waiting':'waiting for data...',
+    'rule.shoulders':'Shoulders level',
+    'rule.lean':'Spine straight, no lean',
+    'rule.head':'Head upright',
+    'rule.knee':'Left knee doesn\'t collapse inward',
+    'rule.neck':'Neck angle / headstock height',
+    'rule.elbow':'Right elbow on the body edge',
+    'rule.wrist':'Left wrist straight',
+    'rule.thumb':'Thumb doesn\'t stick out above the neck',
+    'rule.curlL':'Left hand fingers curled',
+    'rule.curlR':'Right hand fingers curled',
+    'rule.arms':'Arms in playing position',
+    'rule.elbowL':'Left elbow relaxed, away from body',
+    'rule.unavailable':'not available in this mode',
+    'rule.requiresCalib':'requires calibration',
+    'rule.ok':'good',
+    'msg.shoulders.rightDown':'right shoulder dropped', 'msg.shoulders.leftDown':'left shoulder dropped',
+    'msg.lean.right':'leaning right', 'msg.lean.left':'leaning left',
+    'msg.head.bad':'head tilted / dropped',
+    'msg.knee.ok':'knee positioned correctly', 'msg.knee.bad':'left knee collapsing inward',
+    'msg.knee.notNeeded':'not needed with a guitar support',
+    'msg.arms.bad':'arms dropped / not in playing position',
+    'msg.elbowL.tucked':'elbow pressed against the body', 'msg.elbowL.straight':'arm straightened — bend the elbow',
+    'msg.neck.low':'neck too low', 'msg.neck.high':'neck too high',
+    'msg.elbow.ok':'resting correctly', 'msg.elbow.bad':'slipped off the edge of the body',
+    'msg.wrist.ok':'straight', 'msg.wrist.bad':'bent',
+    'msg.thumb.ok':'in a good position', 'msg.thumb.bad':'sticking out above the neck',
+    'msg.curl.ok':'curled', 'msg.curl.bad':'straightened / tense',
+    'msg.noLeftHandCalib':'calibration had no left hand — try again',
+    'msg.noLeftHandNow':'can\'t see your left hand right now',
+    'msg.noRightHandNow':'can\'t see your right hand',
+    voiceGood1:'Everything looks good, keep it up!', voiceGood2:'Great posture!', voiceGood3:'Very good — keep going like this.',
+    'speech.calibSaved':'Reference posture saved',
+    idToPhrase: {
+      shoulders:'Level your shoulders, one is higher', lean:'Sit up straight, don\'t lean your torso',
+      head:'Lift your head, don\'t hunch over the neck', knee:'Straighten your knee',
+      arms:'Get your arms into playing position, don\'t drop them',
+      neck:'Fix the height of the guitar neck', elbow:'Rest your right forearm on the edge of the body',
+      wrist:'Straighten your left wrist', thumb:'Lower your thumb below the neck',
+      curlL:'Curl the fingers of your left hand', curlR:'Curl the fingers of your right hand',
+      elbowL:'Move your elbow away from your body and bend it slightly',
+    },
+    dateLocale:'en-US', unknownError:'Unknown error.',
+  },
+  de: {
+    title:'Haltung', 'help.title':'Wie funktioniert das?',
+    'onboarding.title':'Willkommen! 👋',
+    'onboarding.li1':'Setz dich mit deiner Gitarre <b>frontal zum Telefon</b>, ca. 1,5–2 m von der Kamera entfernt.',
+    'onboarding.li2':'Das <b>allgemeine Muster</b> funktioniert sofort — es prüft Schultern, Rücken, Kopf und (mit Fußbank) die Knieposition nach allgemeinen Haltungsrichtlinien. Wähle in den Einstellungen, ob du mit <b>Fußbank</b> oder <b>Gitarrenstütze</b> spielst — mit Gitarrenstütze ist die Knie-Regel deaktiviert.',
+    'onboarding.li3':'<b>Meine Kalibrierung</b> (4 Fotos im Abstand von 5 Sekunden) fügt genauere Regeln hinzu: Halswinkel, Ellbogen, Handgelenk, Finger.',
+    'onboarding.li4':'Die App sagt dir laut, was zu korrigieren ist — live, während du spielst.',
+    'onboarding.skip':'Los geht\'s',
+    'mode.generic':'Allgemeines Muster', 'mode.personal':'Meine Kalibrierung',
+    'mode.level':'📐 Nivellieren', 'mode.levelDone':'📐 Nivelliert ✓',
+    'mode.levelTitle':'Schnelles Zurücksetzen des Niveaus, wenn das Telefon schräg steht',
+    'mode.calibrate':'🎯 Kalibrieren', 'mode.calibrateLong':' meine Haltung',
+    'mode.voiceOn':'🔊 Stimme: ein', 'mode.voiceOff':'🔇 Stimme: aus',
+    'mode.indicatorGeneric':'Modus: Allgemeines Muster', 'mode.indicatorPersonal':'Modus: Meine Kalibrierung ✓',
+    'sensitivity.label':'🎚️ Empfindlichkeit',
+    'sens.veryGentle':'Sehr sanft', 'sens.gentle':'Sanft', 'sens.standard':'Standard',
+    'sens.demanding':'Anspruchsvoll', 'sens.strict':'Streng',
+    'support.stool':'Fußbank', 'support.guitar':'Gitarrenstütze',
+    fullscreen:'Vollbild',
+    footReminder:'Ich sehe deinen linken Fuß nicht — Telefon verschieben / Bildausschnitt anpassen',
+    'calib.shotLabel':'Foto',
+    'veil.heading':'Schalte die Kamera ein, um zu starten',
+    'veil.msg':'Setz dich so hin, wie du normalerweise spielst, mit deiner Gitarre, frontal zum Telefon, ca. 1,5–2 m entfernt.',
+    'veil.startBtn':'Kamera einschalten', 'veil.loading':'Modell wird geladen...', 'veil.retry':'Erneut versuchen',
+    'calib.stage1title':'Haltungskalibrierung',
+    'calib.stage1desc':'Nimm deine beste Haltung mit der Gitarre ein. Wir machen 4 Fotos im Abstand von 5 Sekunden — du siehst dich live, ein Zähler läuft oben am Bildschirm. Am Ende wählst du das beste Foto aus.',
+    'calib.start':'Fotoserie starten', 'calib.cancel':'Abbrechen',
+    'calib.stage3title':'Bestes Foto auswählen', 'calib.retake':'Neue Serie aufnehmen',
+    'calib.noPersonDetected':'Auf diesem Foto wurde keine Person erkannt — wähle ein anderes oder mach eine neue Serie.',
+    'calib.none':'nicht kalibriert', 'calib.manual':'manuell nivelliert',
+    'calib.resetBtn':'Kalibrierung zurücksetzen',
+    'calib.savedPrefix':'gespeichert ',
+    'speech.default':'Schalte die Kamera ein, um zu starten.',
+    'speech.needCamera':'Schalte zuerst die Kamera ein.',
+    'speech.calibReset':'Gespeicherte Kalibrierung gelöscht.',
+    'speech.waitForBody':'Warte, bis ich dich sehen kann.',
+    'speech.levelSaved':'Referenzpunkt gespeichert — deine aktuelle Haltung zählt jetzt als korrekt.',
+    'speech.greatPosture':'Großartige Haltung — weiter so!',
+    'score.title':'Haltungsergebnis',
+    'debug.toggle':'🔧 Zahlenvorschau (Debug)', 'debug.waiting':'warte auf Daten...',
+    'rule.shoulders':'Schultern auf gleicher Höhe',
+    'rule.lean':'Wirbelsäule gerade, keine Neigung',
+    'rule.head':'Kopf aufrecht',
+    'rule.knee':'Linkes Knie fällt nicht nach innen',
+    'rule.neck':'Halswinkel / Kopfplattenhöhe',
+    'rule.elbow':'Rechter Ellbogen auf der Korpuskante',
+    'rule.wrist':'Linkes Handgelenk gerade',
+    'rule.thumb':'Daumen ragt nicht über den Hals hinaus',
+    'rule.curlL':'Finger der linken Hand gekrümmt',
+    'rule.curlR':'Finger der rechten Hand gekrümmt',
+    'rule.arms':'Arme in Spielposition',
+    'rule.elbowL':'Linker Ellbogen entspannt, vom Körper entfernt',
+    'rule.unavailable':'in diesem Modus nicht verfügbar',
+    'rule.requiresCalib':'erfordert Kalibrierung',
+    'rule.ok':'gut',
+    'msg.shoulders.rightDown':'rechte Schulter abgesenkt', 'msg.shoulders.leftDown':'linke Schulter abgesenkt',
+    'msg.lean.right':'Neigung nach rechts', 'msg.lean.left':'Neigung nach links',
+    'msg.head.bad':'Kopf geneigt / gesenkt',
+    'msg.knee.ok':'Knie richtig positioniert', 'msg.knee.bad':'linkes Knie fällt nach innen',
+    'msg.knee.notNeeded':'mit Gitarrenstütze nicht nötig',
+    'msg.arms.bad':'Arme abgesenkt / nicht in Spielposition',
+    'msg.elbowL.tucked':'Ellbogen an den Körper gepresst', 'msg.elbowL.straight':'Arm gestreckt — Ellbogen beugen',
+    'msg.neck.low':'Hals zu niedrig', 'msg.neck.high':'Hals zu hoch',
+    'msg.elbow.ok':'liegt richtig auf', 'msg.elbow.bad':'von der Korpuskante gerutscht',
+    'msg.wrist.ok':'gerade', 'msg.wrist.bad':'gebeugt',
+    'msg.thumb.ok':'in guter Position', 'msg.thumb.bad':'ragt über den Hals hinaus',
+    'msg.curl.ok':'gekrümmt', 'msg.curl.bad':'gestreckt / verspannt',
+    'msg.noLeftHandCalib':'Kalibrierung ohne linke Hand — bitte erneut versuchen',
+    'msg.noLeftHandNow':'ich sehe deine linke Hand gerade nicht',
+    'msg.noRightHandNow':'ich sehe deine rechte Hand nicht',
+    voiceGood1:'Alles gut, weiter so!', voiceGood2:'Großartige Haltung!', voiceGood3:'Sehr gut — mach so weiter.',
+    'speech.calibSaved':'Referenzhaltung gespeichert',
+    idToPhrase: {
+      shoulders:'Gleiche deine Schultern an, eine ist höher', lean:'Setz dich gerade hin, neige den Oberkörper nicht',
+      head:'Heb den Kopf, beug dich nicht über den Hals', knee:'Strecke dein Knie',
+      arms:'Bring deine Arme in Spielposition, lass sie nicht hängen',
+      neck:'Korrigiere die Höhe des Gitarrenhalses', elbow:'Leg deinen rechten Unterarm auf die Korpuskante',
+      wrist:'Strecke dein linkes Handgelenk', thumb:'Senke deinen Daumen unter den Hals',
+      curlL:'Krümme die Finger deiner linken Hand', curlR:'Krümme die Finger deiner rechten Hand',
+      elbowL:'Bewege den Ellbogen vom Körper weg und beuge ihn leicht',
+    },
+    dateLocale:'de-DE', unknownError:'Unbekannter Fehler.',
+  },
+  fr: {
+    title:'Posture', 'help.title':'Comment ça marche ?',
+    'onboarding.title':'Bienvenue ! 👋',
+    'onboarding.li1':'Asseyez-vous avec votre guitare <b>face au téléphone</b>, à environ 1,5–2 m de la caméra.',
+    'onboarding.li2':'Le <b>modèle général</b> fonctionne immédiatement — il vérifie les épaules, le dos, la tête et (avec un repose-pied) la position du genou selon les règles générales de posture. Dans les paramètres, choisissez si vous jouez avec un <b>repose-pied</b> ou un <b>support de guitare</b> — la règle du genou est désactivée avec un support de guitare.',
+    'onboarding.li3':'<b>Mon calibrage</b> (4 photos à 5 secondes d\'intervalle) ajoute des règles plus précises : angle du manche, coude, poignet, doigts.',
+    'onboarding.li4':'L\'application vous dit à voix haute quoi corriger — en direct, pendant que vous jouez.',
+    'onboarding.skip':'C\'est parti',
+    'mode.generic':'Modèle général', 'mode.personal':'Mon calibrage',
+    'mode.level':'📐 Niveler', 'mode.levelDone':'📐 Nivelé ✓',
+    'mode.levelTitle':'Remise à zéro rapide du niveau quand le téléphone n\'est pas droit',
+    'mode.calibrate':'🎯 Calibrer', 'mode.calibrateLong':' ma posture',
+    'mode.voiceOn':'🔊 Voix : activée', 'mode.voiceOff':'🔇 Voix : désactivée',
+    'mode.indicatorGeneric':'Mode : Modèle général', 'mode.indicatorPersonal':'Mode : Mon calibrage ✓',
+    'sensitivity.label':'🎚️ Sensibilité',
+    'sens.veryGentle':'Très douce', 'sens.gentle':'Douce', 'sens.standard':'Standard',
+    'sens.demanding':'Exigeante', 'sens.strict':'Stricte',
+    'support.stool':'Repose-pied', 'support.guitar':'Support de guitare',
+    fullscreen:'Plein écran',
+    footReminder:'Je ne vois pas votre pied gauche — déplacez le téléphone / ajustez le cadrage',
+    'calib.shotLabel':'photo',
+    'veil.heading':'Allumez la caméra pour commencer',
+    'veil.msg':'Asseyez-vous comme vous jouez habituellement, avec votre guitare, face au téléphone, à environ 1,5–2 m.',
+    'veil.startBtn':'Allumer la caméra', 'veil.loading':'Chargement du modèle...', 'veil.retry':'Réessayer',
+    'calib.stage1title':'Calibrage de la posture',
+    'calib.stage1desc':'Adoptez votre meilleure posture avec la guitare. Nous prendrons 4 photos à 5 secondes d\'intervalle — vous vous verrez en direct, avec un compteur en haut de l\'écran. Vous choisirez la meilleure à la fin.',
+    'calib.start':'Démarrer la série de photos', 'calib.cancel':'Annuler',
+    'calib.stage3title':'Choisissez la meilleure photo', 'calib.retake':'Faire une nouvelle série',
+    'calib.noPersonDetected':'Aucune personne détectée sur cette photo — choisissez-en une autre ou refaites une série.',
+    'calib.none':'non calibré', 'calib.manual':'nivelé manuellement',
+    'calib.resetBtn':'Réinitialiser le calibrage',
+    'calib.savedPrefix':'enregistré ',
+    'speech.default':'Allumez la caméra pour commencer.',
+    'speech.needCamera':'Allumez d\'abord la caméra.',
+    'speech.calibReset':'Calibrage enregistré effacé.',
+    'speech.waitForBody':'Attendez que je puisse vous voir.',
+    'speech.levelSaved':'Point de référence enregistré — votre posture actuelle compte maintenant comme correcte.',
+    'speech.greatPosture':'Excellente posture — continuez ainsi !',
+    'score.title':'Score de posture',
+    'debug.toggle':'🔧 Aperçu des chiffres (debug)', 'debug.waiting':'en attente de données...',
+    'rule.shoulders':'Épaules de niveau',
+    'rule.lean':'Colonne droite, sans inclinaison',
+    'rule.head':'Tête droite',
+    'rule.knee':'Le genou gauche ne s\'affaisse pas vers l\'intérieur',
+    'rule.neck':'Angle du manche / hauteur de la tête',
+    'rule.elbow':'Coude droit sur le bord de la caisse',
+    'rule.wrist':'Poignet gauche droit',
+    'rule.thumb':'Le pouce ne dépasse pas au-dessus du manche',
+    'rule.curlL':'Doigts de la main gauche courbés',
+    'rule.curlR':'Doigts de la main droite courbés',
+    'rule.arms':'Bras en position de jeu',
+    'rule.elbowL':'Coude gauche détendu, éloigné du corps',
+    'rule.unavailable':'non disponible dans ce mode',
+    'rule.requiresCalib':'nécessite un calibrage',
+    'rule.ok':'bon',
+    'msg.shoulders.rightDown':'épaule droite abaissée', 'msg.shoulders.leftDown':'épaule gauche abaissée',
+    'msg.lean.right':'inclinaison à droite', 'msg.lean.left':'inclinaison à gauche',
+    'msg.head.bad':'tête inclinée / baissée',
+    'msg.knee.ok':'genou bien positionné', 'msg.knee.bad':'le genou gauche s\'affaisse vers l\'intérieur',
+    'msg.knee.notNeeded':'non nécessaire avec un support de guitare',
+    'msg.arms.bad':'bras baissés / pas en position de jeu',
+    'msg.elbowL.tucked':'coude pressé contre le corps', 'msg.elbowL.straight':'bras tendu — pliez le coude',
+    'msg.neck.low':'manche trop bas', 'msg.neck.high':'manche trop haut',
+    'msg.elbow.ok':'bien posé', 'msg.elbow.bad':'a glissé du bord de la caisse',
+    'msg.wrist.ok':'droit', 'msg.wrist.bad':'plié',
+    'msg.thumb.ok':'bien positionné', 'msg.thumb.bad':'dépasse au-dessus du manche',
+    'msg.curl.ok':'courbés', 'msg.curl.bad':'tendus / crispés',
+    'msg.noLeftHandCalib':'calibrage sans main gauche — réessayez',
+    'msg.noLeftHandNow':'je ne vois pas votre main gauche pour l\'instant',
+    'msg.noRightHandNow':'je ne vois pas votre main droite',
+    voiceGood1:'Tout va bien, continuez ainsi !', voiceGood2:'Excellente posture !', voiceGood3:'Très bien — continuez comme ça.',
+    'speech.calibSaved':'Posture de référence enregistrée',
+    idToPhrase: {
+      shoulders:'Alignez vos épaules, l\'une est plus haute', lean:'Redressez-vous, n\'inclinez pas votre torse',
+      head:'Levez la tête, ne vous penchez pas sur le manche', knee:'Redressez votre genou',
+      arms:'Mettez vos bras en position de jeu, ne les laissez pas tomber',
+      neck:'Corrigez la hauteur du manche de la guitare', elbow:'Posez votre avant-bras droit sur le bord de la caisse',
+      wrist:'Redressez votre poignet gauche', thumb:'Baissez votre pouce sous le manche',
+      curlL:'Courbez les doigts de votre main gauche', curlR:'Courbez les doigts de votre main droite',
+      elbowL:'Éloignez votre coude du corps et pliez-le légèrement',
+    },
+    dateLocale:'fr-FR', unknownError:'Erreur inconnue.',
+  },
+  es: {
+    title:'Postura', 'help.title':'¿Cómo funciona esto?',
+    'onboarding.title':'¡Bienvenido! 👋',
+    'onboarding.li1':'Siéntate con tu guitarra <b>de frente al teléfono</b>, a unos 1,5–2 m de la cámara.',
+    'onboarding.li2':'El <b>patrón general</b> funciona de inmediato — comprueba hombros, espalda, cabeza y (con reposapiés) la posición de la rodilla según pautas generales de postura. En ajustes, elige si tocas con <b>reposapiés</b> o con <b>soporte de guitarra</b> — con el soporte, la regla de la rodilla se desactiva.',
+    'onboarding.li3':'<b>Mi calibración</b> (4 fotos con 5 segundos de intervalo) añade reglas más precisas: ángulo del mástil, codo, muñeca, dedos.',
+    'onboarding.li4':'La app te dice en voz alta qué corregir — en vivo, mientras tocas.',
+    'onboarding.skip':'Empecemos',
+    'mode.generic':'Patrón general', 'mode.personal':'Mi calibración',
+    'mode.level':'📐 Nivelar', 'mode.levelDone':'📐 Nivelado ✓',
+    'mode.levelTitle':'Restablece rápidamente el nivel cuando el teléfono no está recto',
+    'mode.calibrate':'🎯 Calibrar', 'mode.calibrateLong':' mi postura',
+    'mode.voiceOn':'🔊 Voz: activada', 'mode.voiceOff':'🔇 Voz: desactivada',
+    'mode.indicatorGeneric':'Modo: Patrón general', 'mode.indicatorPersonal':'Modo: Mi calibración ✓',
+    'sensitivity.label':'🎚️ Sensibilidad',
+    'sens.veryGentle':'Muy suave', 'sens.gentle':'Suave', 'sens.standard':'Estándar',
+    'sens.demanding':'Exigente', 'sens.strict':'Estricta',
+    'support.stool':'Reposapiés', 'support.guitar':'Soporte de guitarra',
+    fullscreen:'Pantalla completa',
+    footReminder:'No veo tu pie izquierdo — mueve el teléfono / ajusta el encuadre',
+    'calib.shotLabel':'foto',
+    'veil.heading':'Activa la cámara para empezar',
+    'veil.msg':'Siéntate como sueles tocar, con tu guitarra, de frente al teléfono, a unos 1,5–2 m.',
+    'veil.startBtn':'Activar cámara', 'veil.loading':'Cargando modelo...', 'veil.retry':'Intentar de nuevo',
+    'calib.stage1title':'Calibración de postura',
+    'calib.stage1desc':'Adopta tu mejor postura con la guitarra. Tomaremos 4 fotos con 5 segundos de intervalo — te verás en vivo, con un contador en la parte superior de la pantalla. Al final elegirás la mejor.',
+    'calib.start':'Iniciar la serie de fotos', 'calib.cancel':'Cancelar',
+    'calib.stage3title':'Elige la mejor foto', 'calib.retake':'Hacer una nueva serie',
+    'calib.noPersonDetected':'No se detectó ninguna persona en esta foto — elige otra o haz una nueva serie.',
+    'calib.none':'sin calibrar', 'calib.manual':'nivelado manualmente',
+    'calib.resetBtn':'Restablecer calibración',
+    'calib.savedPrefix':'guardada ',
+    'speech.default':'Activa la cámara para empezar.',
+    'speech.needCamera':'Activa primero la cámara.',
+    'speech.calibReset':'Calibración guardada borrada.',
+    'speech.waitForBody':'Espera a que pueda verte.',
+    'speech.levelSaved':'Punto de referencia guardado — tu postura actual ahora cuenta como correcta.',
+    'speech.greatPosture':'¡Excelente postura — sigue así!',
+    'score.title':'Puntuación de postura',
+    'debug.toggle':'🔧 Vista de números (debug)', 'debug.waiting':'esperando datos...',
+    'rule.shoulders':'Hombros a la misma altura',
+    'rule.lean':'Columna recta, sin inclinación',
+    'rule.head':'Cabeza erguida',
+    'rule.knee':'La rodilla izquierda no se hunde hacia adentro',
+    'rule.neck':'Ángulo del mástil / altura de la pala',
+    'rule.elbow':'Codo derecho sobre el borde de la caja',
+    'rule.wrist':'Muñeca izquierda recta',
+    'rule.thumb':'El pulgar no sobresale por encima del mástil',
+    'rule.curlL':'Dedos de la mano izquierda curvados',
+    'rule.curlR':'Dedos de la mano derecha curvados',
+    'rule.arms':'Brazos en posición de tocar',
+    'rule.elbowL':'Codo izquierdo relajado, alejado del cuerpo',
+    'rule.unavailable':'no disponible en este modo',
+    'rule.requiresCalib':'requiere calibración',
+    'rule.ok':'bien',
+    'msg.shoulders.rightDown':'hombro derecho caído', 'msg.shoulders.leftDown':'hombro izquierdo caído',
+    'msg.lean.right':'inclinación a la derecha', 'msg.lean.left':'inclinación a la izquierda',
+    'msg.head.bad':'cabeza inclinada / caída',
+    'msg.knee.ok':'rodilla bien colocada', 'msg.knee.bad':'la rodilla izquierda se hunde hacia adentro',
+    'msg.knee.notNeeded':'no necesario con soporte de guitarra',
+    'msg.arms.bad':'brazos caídos / no en posición de tocar',
+    'msg.elbowL.tucked':'codo presionado contra el cuerpo', 'msg.elbowL.straight':'brazo estirado — dobla el codo',
+    'msg.neck.low':'mástil demasiado bajo', 'msg.neck.high':'mástil demasiado alto',
+    'msg.elbow.ok':'apoyado correctamente', 'msg.elbow.bad':'se deslizó del borde de la caja',
+    'msg.wrist.ok':'recta', 'msg.wrist.bad':'doblada',
+    'msg.thumb.ok':'en buena posición', 'msg.thumb.bad':'sobresale por encima del mástil',
+    'msg.curl.ok':'curvados', 'msg.curl.bad':'estirados / tensos',
+    'msg.noLeftHandCalib':'calibración sin mano izquierda — inténtalo de nuevo',
+    'msg.noLeftHandNow':'no veo tu mano izquierda en este momento',
+    'msg.noRightHandNow':'no veo tu mano derecha',
+    voiceGood1:'Todo va bien, ¡sigue así!', voiceGood2:'¡Excelente postura!', voiceGood3:'Muy bien — continúa así.',
+    'speech.calibSaved':'Postura de referencia guardada',
+    idToPhrase: {
+      shoulders:'Nivela tus hombros, uno está más alto', lean:'Siéntate derecho, no inclines el torso',
+      head:'Levanta la cabeza, no te encorves sobre el mástil', knee:'Endereza tu rodilla',
+      arms:'Pon tus brazos en posición de tocar, no los dejes caer',
+      neck:'Corrige la altura del mástil de la guitarra', elbow:'Apoya tu antebrazo derecho en el borde de la caja',
+      wrist:'Endereza tu muñeca izquierda', thumb:'Baja tu pulgar por debajo del mástil',
+      curlL:'Curva los dedos de tu mano izquierda', curlR:'Curva los dedos de tu mano derecha',
+      elbowL:'Aleja el codo de tu cuerpo y dóblalo ligeramente',
+    },
+    dateLocale:'es-ES', unknownError:'Error desconocido.',
+  },
+  pt: {
+    title:'Postura', 'help.title':'Como é que isto funciona?',
+    'onboarding.title':'Bem-vindo! 👋',
+    'onboarding.li1':'Senta-te com a tua guitarra <b>de frente para o telemóvel</b>, a cerca de 1,5–2 m da câmara.',
+    'onboarding.li2':'O <b>padrão geral</b> funciona de imediato — verifica ombros, costas, cabeça e (com apoio de pé) a posição do joelho segundo as regras gerais de postura. Nas definições, escolhe se tocas com <b>apoio de pé</b> ou com <b>apoio de guitarra</b> — a regra do joelho é desativada com o apoio de guitarra.',
+    'onboarding.li3':'A <b>minha calibração</b> (4 fotos com 5 segundos de intervalo) acrescenta regras mais precisas: ângulo do braço, cotovelo, pulso, dedos.',
+    'onboarding.li4':'A app diz-te em voz alta o que corrigir — ao vivo, enquanto tocas.',
+    'onboarding.skip':'Vamos lá',
+    'mode.generic':'Padrão geral', 'mode.personal':'Minha calibração',
+    'mode.level':'📐 Nivelar', 'mode.levelDone':'📐 Nivelado ✓',
+    'mode.levelTitle':'Repõe rapidamente o nível quando o telemóvel não está direito',
+    'mode.calibrate':'🎯 Calibrar', 'mode.calibrateLong':' a minha postura',
+    'mode.voiceOn':'🔊 Voz: ligada', 'mode.voiceOff':'🔇 Voz: desligada',
+    'mode.indicatorGeneric':'Modo: Padrão geral', 'mode.indicatorPersonal':'Modo: Minha calibração ✓',
+    'sensitivity.label':'🎚️ Sensibilidade',
+    'sens.veryGentle':'Muito suave', 'sens.gentle':'Suave', 'sens.standard':'Padrão',
+    'sens.demanding':'Exigente', 'sens.strict':'Rigorosa',
+    'support.stool':'Apoio de pé', 'support.guitar':'Apoio de guitarra',
+    fullscreen:'Ecrã inteiro',
+    footReminder:'Não consigo ver o teu pé esquerdo — afasta o telemóvel / ajusta o enquadramento',
+    'calib.shotLabel':'foto',
+    'veil.heading':'Liga a câmara para começar',
+    'veil.msg':'Senta-te como costumas tocar, com a tua guitarra, de frente para o telemóvel, a cerca de 1,5–2 m.',
+    'veil.startBtn':'Ligar câmara', 'veil.loading':'A carregar o modelo...', 'veil.retry':'Tentar novamente',
+    'calib.stage1title':'Calibração de postura',
+    'calib.stage1desc':'Adota a tua melhor postura com a guitarra. Vamos tirar 4 fotos com 5 segundos de intervalo — vais ver-te ao vivo, com um contador no topo do ecrã. No final escolhes a melhor.',
+    'calib.start':'Iniciar a série de fotos', 'calib.cancel':'Cancelar',
+    'calib.stage3title':'Escolhe a melhor foto', 'calib.retake':'Fazer nova série',
+    'calib.noPersonDetected':'Não foi detetada nenhuma pessoa nesta foto — escolhe outra ou faz uma nova série.',
+    'calib.none':'sem calibração', 'calib.manual':'nivelado manualmente',
+    'calib.resetBtn':'Repor calibração',
+    'calib.savedPrefix':'guardada ',
+    'speech.default':'Liga a câmara para começar.',
+    'speech.needCamera':'Liga primeiro a câmara.',
+    'speech.calibReset':'Calibração guardada foi apagada.',
+    'speech.waitForBody':'Espera até eu conseguir ver-te.',
+    'speech.levelSaved':'Ponto de referência guardado — a tua postura atual agora conta como correta.',
+    'speech.greatPosture':'Ótima postura — continua assim!',
+    'score.title':'Pontuação de postura',
+    'debug.toggle':'🔧 Pré-visualização de números (debug)', 'debug.waiting':'à espera de dados...',
+    'rule.shoulders':'Ombros ao mesmo nível',
+    'rule.lean':'Coluna direita, sem inclinação',
+    'rule.head':'Cabeça direita',
+    'rule.knee':'O joelho esquerdo não cai para dentro',
+    'rule.neck':'Ângulo do braço / altura da cabeça da guitarra',
+    'rule.elbow':'Cotovelo direito no rebordo da caixa',
+    'rule.wrist':'Pulso esquerdo direito',
+    'rule.thumb':'O polegar não ultrapassa o braço',
+    'rule.curlL':'Dedos da mão esquerda curvados',
+    'rule.curlR':'Dedos da mão direita curvados',
+    'rule.arms':'Braços em posição de tocar',
+    'rule.elbowL':'Cotovelo esquerdo relaxado, afastado do corpo',
+    'rule.unavailable':'não disponível neste modo',
+    'rule.requiresCalib':'requer calibração',
+    'rule.ok':'bom',
+    'msg.shoulders.rightDown':'ombro direito caído', 'msg.shoulders.leftDown':'ombro esquerdo caído',
+    'msg.lean.right':'inclinação para a direita', 'msg.lean.left':'inclinação para a esquerda',
+    'msg.head.bad':'cabeça inclinada / baixa',
+    'msg.knee.ok':'joelho bem posicionado', 'msg.knee.bad':'o joelho esquerdo está a cair para dentro',
+    'msg.knee.notNeeded':'não necessário com apoio de guitarra',
+    'msg.arms.bad':'braços caídos / fora da posição de tocar',
+    'msg.elbowL.tucked':'cotovelo pressionado contra o corpo', 'msg.elbowL.straight':'braço esticado — dobra o cotovelo',
+    'msg.neck.low':'braço demasiado baixo', 'msg.neck.high':'braço demasiado alto',
+    'msg.elbow.ok':'bem apoiado', 'msg.elbow.bad':'escorregou do rebordo da caixa',
+    'msg.wrist.ok':'direito', 'msg.wrist.bad':'dobrado',
+    'msg.thumb.ok':'em boa posição', 'msg.thumb.bad':'ultrapassa o braço',
+    'msg.curl.ok':'curvados', 'msg.curl.bad':'esticados / tensos',
+    'msg.noLeftHandCalib':'calibração sem mão esquerda — tenta novamente',
+    'msg.noLeftHandNow':'não consigo ver a tua mão esquerda agora',
+    'msg.noRightHandNow':'não consigo ver a tua mão direita',
+    voiceGood1:'Está tudo bem, continua assim!', voiceGood2:'Ótima postura!', voiceGood3:'Muito bem — continua assim.',
+    'speech.calibSaved':'Postura de referência guardada',
+    idToPhrase: {
+      shoulders:'Nivela os ombros, um está mais alto', lean:'Senta-te direito, não inclines o tronco',
+      head:'Levanta a cabeça, não te encurves sobre o braço', knee:'Endireita o joelho',
+      arms:'Coloca os braços em posição de tocar, não os deixes cair',
+      neck:'Corrige a altura do braço da guitarra', elbow:'Apoia o antebraço direito no rebordo da caixa',
+      wrist:'Endireita o pulso esquerdo', thumb:'Baixa o polegar para debaixo do braço',
+      curlL:'Curva os dedos da mão esquerda', curlR:'Curva os dedos da mão direita',
+      elbowL:'Afasta o cotovelo do corpo e dobra-o ligeiramente',
+    },
+    dateLocale:'pt-PT', unknownError:'Erro desconhecido.',
+  },
+};
+let currentLang = 'pl';
+try{ const l = localStorage.getItem('appLangV1'); if(['pl','en','de','fr','es','pt'].includes(l)) currentLang = l; }catch(e){}
+function trR(key){ const d=I18N[currentLang]||I18N.pl; return (key in d) ? d[key] : (I18N.pl[key] ?? key); }
+
+const STORAGE_KEY = 'postawaBaselineV2';
+
+const RULES = [
+  { id:'shoulders', nameKey:'rule.shoulders',   exp:false, generic:true },
+  { id:'lean',      nameKey:'rule.lean',        exp:false, generic:true },
+  { id:'head',      nameKey:'rule.head',        exp:false, generic:true },
+  { id:'knee',      nameKey:'rule.knee',        exp:false, generic:true },
+  { id:'neck',      nameKey:'rule.neck',        exp:true,  generic:false },
+  { id:'elbow',     nameKey:'rule.elbow',       exp:true,  generic:false },
+  { id:'wrist',     nameKey:'rule.wrist',       exp:true,  generic:false },
+  { id:'thumb',     nameKey:'rule.thumb',       exp:true,  generic:false },
+  { id:'curlL',     nameKey:'rule.curlL',       exp:true,  generic:false },
+  { id:'curlR',     nameKey:'rule.curlR',       exp:true,  generic:false },
+  { id:'arms',      nameKey:'rule.arms',        exp:false, generic:true },
+  { id:'elbowL',    nameKey:'rule.elbowL',      exp:false, generic:true },
+];
+
+// Generic (uncalibrated) target values — based specifically on the classical guitar posture
+// lessons by Bradford Werner (This is Classical Guitar / Victoria Conservatory of Music):
+// spine centered on the X-Y axis with no side lean, both shoulders relaxed and level,
+// sitting toward the front edge of the chair, left foot raised via footstool, right foot flat.
+const GENERIC_BASELINE = {
+  shoulderTilt:0, earTilt:0, spineLeanX:0, noseOffsetX:0, kneeDiffY:-0.35
+};
+const BASE_GENERIC_TOL = { shoulders:8, lean:0.17, head:26, knee:0.24 };
+const BASE_PERSONAL_TOL = { shoulders:7, lean:0.15, head:24, knee:0.20, neck:18, elbow:0.20, wrist:20, thumb:0.15, curl:0.24 };
+const SENSITIVITY = [
+  { labelKey:'sens.veryGentle', mult:1.7, cap:70 },
+  { labelKey:'sens.gentle', mult:1.35, cap:55 },
+  { labelKey:'sens.standard', mult:1.0, cap:40 },
+  { labelKey:'sens.demanding', mult:0.85, cap:32 },
+  { labelKey:'sens.strict', mult:0.7, cap:25 },
+];
+let sensitivityLevel = 3;
+const SENS_KEY = 'postawaSensitivityV1';
+try{ const s = parseInt(localStorage.getItem(SENS_KEY)); if(s>=1 && s<=5) sensitivityLevel = s; }catch(e){}
+function scaledTol(base, mult){
+  const out = {};
+  for(const k in base) out[k] = base[k]*mult;
+  return out;
+}
+const HOLD_MS = { normal:300, beta:300 };
+
+const ruleListEl = document.getElementById('ruleList');
+const ruleTiming = {};
+RULES.forEach(r=>{
+  ruleTiming[r.id] = { status:'unknown', pendingStatus:null, pendingSince:0 };
+  const el = document.createElement('div');
+  el.className = 'rule unavailable' + (r.exp ? ' experimental':'');
+  el.id = 'rule-'+r.id;
+  el.innerHTML = `<div class="status-dot"></div><div class="rule-text"><div class="name" id="rulename-${r.id}">${trR(r.nameKey)}</div><div class="hint" id="hint-${r.id}">${trR('rule.unavailable')}</div></div>`;
+  ruleListEl.appendChild(el);
+});
+function refreshRuleNames(){
+  RULES.forEach(r=>{
+    const nameEl = document.getElementById('rulename-'+r.id);
+    if(nameEl) nameEl.textContent = trR(r.nameKey);
+    if(ruleTiming[r.id] && ruleTiming[r.id].status==='unknown'){
+      const hintEl = document.getElementById('hint-'+r.id);
+      if(hintEl) hintEl.textContent = r.exp ? trR('rule.requiresCalib') : trR('rule.unavailable');
+    }
+  });
+}
+
+const video = document.getElementById('video');
+const overlay = document.getElementById('overlay');
+const ctx = overlay.getContext('2d');
+const stage = document.getElementById('stage');
+const veil = document.getElementById('veil');
+const veilMsg = document.getElementById('veilMsg');
+const startBtn = document.getElementById('startBtn');
+const calibrateBtn = document.getElementById('calibrateBtn');
+const voiceToggle = document.getElementById('voiceToggle');
+const speechText = document.getElementById('speechText');
+const footReminder = document.getElementById('footReminder');
+const debugBadge = document.getElementById('debugBadge');
+const rosetteFg = document.getElementById('rosetteFg');
+const scoreNum = document.getElementById('scoreNum');
+const THEMES = [
+  { id:'wegiel', label:'Węgiel i miedź', bg:'#14171A', panel:'#1E2226', panel2:'#2E3538', gold:'#C56A3B', ink:'#FFFFFF', inkSoft:'#B7C2C6', activeText:'#1A1310' },
+  { id:'morska', label:'Morska głębia', bg:'#00171F', panel:'#003052', panel2:'#3A554E', gold:'#A85838', ink:'#FFFFFF', inkSoft:'#C6D3D0', activeText:'#1A1310' },
+  { id:'lesna', label:'Leśna zieleń', bg:'#0D1B14', panel:'#14261C', panel2:'#1F3A2A', gold:'#D9A441', ink:'#FFFFFF', inkSoft:'#B8C9BC', activeText:'#1A1310' },
+  { id:'fiolet', label:'Fiolet nocy', bg:'#14101F', panel:'#1E1830', panel2:'#2C2445', gold:'#8B6CF0', ink:'#FFFFFF', inkSoft:'#C3B8DE', activeText:'#FFFFFF' },
+  { id:'orzech', label:'Orzechowy brąz', bg:'#1B130E', panel:'#2A2019', panel2:'#3A2A1E', gold:'#D9AF3E', ink:'#FFFFFF', inkSoft:'#B9AB98', activeText:'#1A1310' },
+  { id:'pergamin', label:'Jasny pergamin', bg:'#F5EFE3', panel:'#FFFFFF', panel2:'#E4D9C4', gold:'#B5563C', ink:'#2A211A', inkSoft:'#6B5D4F', activeText:'#FFFFFF' },
+  { id:'chlodny', label:'Chłodny jasny', bg:'#EEF2F5', panel:'#FFFFFF', panel2:'#D7E1E8', gold:'#2E6E8E', ink:'#1B2530', inkSoft:'#5C6B78', activeText:'#FFFFFF' },
+  { id:'ocean', label:'Ocean głębinowy', bg:'#001014', panel:'#00232B', panel2:'#014653', gold:'#2FD9C4', ink:'#E7FBFA', inkSoft:'#9CC9C4', activeText:'#00232B' },
+  { id:'neon', label:'Neon nocy', bg:'#0A0014', panel:'#16002B', panel2:'#2E0A4D', gold:'#FF2FD4', ink:'#F5F0FF', inkSoft:'#C9A8E8', activeText:'#FFFFFF' },
+  { id:'cytryna', label:'Cytrynowy szok', bg:'#0D1400', panel:'#1B2900', panel2:'#2E4700', gold:'#D4FF3D', ink:'#F3FFE0', inkSoft:'#B8CE8A', activeText:'#1A1310' },
+];
+const THEME_KEY = 'postawaThemeV1';
+function applyTheme(theme){
+  const r = document.documentElement.style;
+  r.setProperty('--panel', theme.panel);
+  r.setProperty('--panel-2', theme.panel2);
+  r.setProperty('--cream-2', theme.panel2);
+  r.setProperty('--gold', theme.gold);
+  r.setProperty('--cream', theme.ink);
+  r.setProperty('--ink', theme.ink);
+  r.setProperty('--ink-soft', theme.inkSoft);
+  r.setProperty('--active-text', theme.activeText);
+  document.body.style.background = theme.bg;
+  try{ localStorage.setItem(THEME_KEY, theme.id); }catch(e){}
+  document.querySelectorAll('.theme-swatch').forEach(el=>el.classList.toggle('active', el.dataset.id===theme.id));
+}
+function buildThemePicker(){
+  const wrap = document.getElementById('themePicker');
+  wrap.innerHTML = THEMES.map(t=>`
+    <button class="theme-swatch" data-id="${t.id}">
+      <span class="chip"><span style="background:${t.bg}"></span><span style="background:${t.panel}"></span><span style="background:${t.gold}"></span></span>
+      <span class="label">${t.label}</span>
+    </button>`).join('');
+  wrap.querySelectorAll('.theme-swatch').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const t = THEMES.find(x=>x.id===btn.dataset.id);
+      applyTheme(t);
+    });
+  });
+}
+buildThemePicker();
+try{
+  const savedThemeId = localStorage.getItem(THEME_KEY);
+  const t = THEMES.find(x=>x.id===savedThemeId) || THEMES[0];
+  applyTheme(t);
+}catch(e){ applyTheme(THEMES[0]); }
+document.getElementById('themeBtn').addEventListener('click', ()=>{
+  document.getElementById('themePicker').classList.toggle('hidden');
+});
+
+const ONBOARD_KEY = 'postawaOnboardingSeenV1';
+const onboarding = document.getElementById('onboarding');
+const helpBtn = document.getElementById('helpBtn');
+function showOnboarding(){ onboarding.classList.remove('hidden'); }
+function hideOnboarding(){ onboarding.classList.add('hidden'); try{ localStorage.setItem(ONBOARD_KEY,'1'); }catch(e){} }
+document.getElementById('onboardingSkip').addEventListener('click', hideOnboarding);
+helpBtn.addEventListener('click', showOnboarding);
+// Samouczek wyłączony automatycznie po scaleniu w aplikację (dostępny ręcznie przez przycisk pomocy).
+// try{ if(!localStorage.getItem(ONBOARD_KEY)) showOnboarding(); }catch(e){ showOnboarding(); }
+
+const sensitivitySlider = document.getElementById('sensitivitySlider');
+const sensitivityValue = document.getElementById('sensitivityValue');
+sensitivitySlider.value = sensitivityLevel;
+sensitivityValue.textContent = trR(SENSITIVITY[sensitivityLevel-1].labelKey);
+sensitivitySlider.addEventListener('input', ()=>{
+  sensitivityLevel = parseInt(sensitivitySlider.value);
+  sensitivityValue.textContent = trR(SENSITIVITY[sensitivityLevel-1].labelKey);
+  try{ localStorage.setItem(SENS_KEY, sensitivityLevel); }catch(e){}
+});
+
+const debugToggle = document.getElementById('debugToggle');
+const debugNumbersWrap = document.getElementById('debugNumbersWrap');
+const debugArrow = document.getElementById('debugArrow');
+debugToggle.addEventListener('click', ()=>{
+  const open = debugNumbersWrap.style.display !== 'none';
+  debugNumbersWrap.style.display = open ? 'none' : 'block';
+  debugArrow.textContent = open ? '▸' : '▾';
+});
+
+const SUPPORT_KEY = 'postawaSupportTypeV1';
+let supportType = 'stool'; // 'stool' (podnóżek) | 'guitarrest' (podgitarnik)
+try{
+  const savedSupport = localStorage.getItem(SUPPORT_KEY);
+  if(savedSupport === 'stool' || savedSupport === 'guitarrest') supportType = savedSupport;
+}catch(e){}
+
+const supportStoolBtn = document.getElementById('supportStoolBtn');
+const supportGuitarBtn = document.getElementById('supportGuitarBtn');
+function updateSupportUI(){
+  supportStoolBtn.classList.toggle('active', supportType==='stool');
+  supportGuitarBtn.classList.toggle('active', supportType==='guitarrest');
+}
+supportStoolBtn.addEventListener('click', ()=>{
+  if(supportType==='stool') return;
+  supportType='stool';
+  try{ localStorage.setItem(SUPPORT_KEY, supportType); }catch(e){}
+  ruleTiming.knee.status='unknown'; ruleTiming.knee.pendingStatus=null;
+  updateSupportUI();
+});
+supportGuitarBtn.addEventListener('click', ()=>{
+  if(supportType==='guitarrest') return;
+  supportType='guitarrest';
+  try{ localStorage.setItem(SUPPORT_KEY, supportType); }catch(e){}
+  ruleTiming.knee.status='unknown'; ruleTiming.knee.pendingStatus=null;
+  updateSupportUI();
+});
+updateSupportUI();
+
+const modeGenericBtn = document.getElementById('modeGenericBtn');
+const modePersonalBtn = document.getElementById('modePersonalBtn');
+const levelBtn = document.getElementById('levelBtn');
+const calibStatus = document.getElementById('calibStatus');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+const calibOverlay = document.getElementById('calibOverlay');
+const calibStage1 = document.getElementById('calibStage1');
+const calibStage3 = document.getElementById('calibStage3');
+const calibStartBtn = document.getElementById('calibStartBtn');
+const calibCancelBtn = document.getElementById('calibCancelBtn');
+const countdownNum = document.getElementById('countdownNum');
+const shotIndexEl = document.getElementById('shotIndex');
+const shotsGrid = document.getElementById('shotsGrid');
+const retakeBtn = document.getElementById('retakeBtn');
+
+let poseLandmarker=null, handLandmarker=null;
+let running=false;
+let currentCameraStream=null;
+let voiceOn=true;
+
+/* The TTS plugin proved unreliable under repeated real-world invocation (confirmed via device
+   testing — calls would hang indefinitely after a few uses, even with stop()/timeout guards).
+   Pre-recorded audio clips for our fixed set of phrases sidestep that entirely — playing an
+   <audio> element is a much simpler, well-supported operation.
+   Clips live in per-language subfolders (vendor/voice/<lang>/...) so adding a new language later
+   is just "record/generate these same 15 phrases in that language" — no code changes needed
+   beyond adding it to VOICE_READY_LANGS once its clips actually exist. Until then, even if the
+   person has picked another language in Settings, voice quietly keeps using Polish rather than
+   trying to load files that don't exist yet. */
+const VOICE_READY_LANGS = ['pl', 'en', 'de', 'es', 'fr', 'pt'];
+function voiceBase(){
+  let lang = 'pl';
+  try{
+    const stored = localStorage.getItem('appLangV1');
+    if(stored && VOICE_READY_LANGS.includes(stored)) lang = stored;
+  }catch(e){}
+  return '../vendor/voice/' + lang + '/';
+}
+const VOICE_CLIPS = {
+  shoulders:'shoulders.mp3', lean:'lean.mp3', head:'head.mp3', knee:'knee.mp3',
+  arms:'arms.mp3', neck:'neck.mp3', elbow:'elbow.mp3', wrist:'wrist.mp3',
+  thumb:'thumb.mp3', curlL:'curlL.mp3', curlR:'curlR.mp3', elbowL:'elbowL.mp3',
+  pos1:'pos1.mp3', pos2:'pos2.mp3', pos3:'pos3.mp3', calib:'calib.mp3'
+};
+let voiceAudioCache = {};
+let voiceCacheLang = null;
+function playClip(id){
+  const file = VOICE_CLIPS[id];
+  if(!file) return;
+  const base = voiceBase();
+  if(voiceCacheLang !== base){ voiceAudioCache = {}; voiceCacheLang = base; } // language changed — drop stale cache
+  let a = voiceAudioCache[id];
+  if(!a){ a = new Audio(base+file); voiceAudioCache[id] = a; }
+  try{ a.currentTime = 0; a.play().catch(()=>{}); }catch(e){}
+}
+function cancelSpeech(){
+  Object.values(voiceAudioCache).forEach(a=>{ try{ a.pause(); a.currentTime = 0; }catch(e){} });
+}
+let mode='generic'; // 'generic' | 'personal'
+let personalBaseline=null;
+let genericOffset=null; // quick one-tap leveling offset for core rules in either mode
+let calibrationActive=false;
+let lastSpeakTime=0, lastSpokenId=null;
+let allGoodSince=null, lastPositiveSpeakTime=0;
+let speechCycle=0;
+let smoothed={};
+const EMA_ALPHA=0.28;
+let lastPoseLm=null, lastHandsResult=null;
+
+const CIRC = 2*Math.PI*50;
+function setRosette(pct){
+  const off = CIRC - (CIRC*pct/100);
+  rosetteFg.style.strokeDasharray = CIRC;
+  rosetteFg.style.strokeDashoffset = off;
+  const BAD_RGB=[242,86,74], OK_RGB=[62,207,126];
+  const t = Math.max(0, Math.min(1, (pct-30)/50));
+  const rC = Math.round(BAD_RGB[0]+(OK_RGB[0]-BAD_RGB[0])*t);
+  const gC = Math.round(BAD_RGB[1]+(OK_RGB[1]-BAD_RGB[1])*t);
+  const bC = Math.round(BAD_RGB[2]+(OK_RGB[2]-BAD_RGB[2])*t);
+  rosetteFg.style.stroke = `rgb(${rC},${gC},${bC})`;
+  const face = pct>=97 ? '😄' : pct>=90 ? '😀' : pct>=80 ? '😊' : pct>=65 ? '🙂' : pct>=50 ? '😐' : pct>=35 ? '😒' : pct>=15 ? '☹️' : '😵';
+  scoreNum.textContent = face;
+}
+
+function speak(text,id){
+  if(!voiceOn || calibrationActive) return;
+  const now = performance.now();
+  if(now-lastSpeakTime < 4000) return;
+  if(id===lastSpokenId && now-lastSpeakTime < 8000) return;
+  lastSpeakTime=now; lastSpokenId=id;
+  speechText.textContent=text;
+  playClip(id);
+}
+
+function setRuleDom(id,status,hint,available){
+  const el = document.getElementById('rule-'+id);
+  el.classList.remove('ok','bad','unavailable');
+  if(!available){ el.classList.add('unavailable'); document.getElementById('hint-'+id).textContent = hint || trR('rule.unavailable'); return; }
+  if(status !== 'unknown') el.classList.add(status);
+  document.getElementById('hint-'+id).textContent = hint || (status==='unknown' ? 'analizuję...' : '');
+}
+
+function updateRuleWithHysteresis(id, rawStatus, hint, holdMs){
+  const t = ruleTiming[id];
+  const now = performance.now();
+  if(rawStatus === t.status){
+    t.pendingStatus=null;
+    setRuleDom(id, t.status, hint, true);
+    return t.status;
+  }
+  if(rawStatus !== t.pendingStatus){
+    t.pendingStatus = rawStatus;
+    t.pendingSince = now;
+  } else if(now - t.pendingSince > holdMs){
+    t.status = rawStatus;
+    t.pendingStatus = null;
+  }
+  setRuleDom(id, t.status, hint, true);
+  return t.status;
+}
+
+async function initModels(){
+  const files = await FilesetResolver.forVisionTasks("../vendor/mediapipe/wasm");
+  const poseCommon = { runningMode:"VIDEO", numPoses:1, minPoseDetectionConfidence:0.5, minPosePresenceConfidence:0.5, minTrackingConfidence:0.5 };
+  const handCommon = { runningMode:"VIDEO", numHands:2, minHandDetectionConfidence:0.5, minHandPresenceConfidence:0.5, minTrackingConfidence:0.5 };
+  try{
+    poseLandmarker = await PoseLandmarker.createFromOptions(files, { baseOptions:{ modelAssetPath:"../vendor/mediapipe/models/pose_landmarker_lite.task", delegate:"GPU" }, ...poseCommon });
+  }catch(e){
+    poseLandmarker = await PoseLandmarker.createFromOptions(files, { baseOptions:{ modelAssetPath:"../vendor/mediapipe/models/pose_landmarker_lite.task", delegate:"CPU" }, ...poseCommon });
+  }
+  try{
+    handLandmarker = await HandLandmarker.createFromOptions(files, { baseOptions:{ modelAssetPath:"../vendor/mediapipe/models/hand_landmarker.task", delegate:"GPU" }, ...handCommon });
+  }catch(e){
+    handLandmarker = await HandLandmarker.createFromOptions(files, { baseOptions:{ modelAssetPath:"../vendor/mediapipe/models/hand_landmarker.task", delegate:"CPU" }, ...handCommon });
+  }
+}
+
+async function startCamera(){
+  if(!window.isSecureContext) throw new Error('Strona musi być otwarta przez HTTPS (lub localhost).');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Ta przeglądarka nie obsługuje kamery.');
+  const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:1280} }, audio:false });
+  currentCameraStream = stream;
+  video.srcObject = stream;
+  await video.play();
+  await tryApplyWideZoom(stream);
+  fitStageToVideo();
+  veil.classList.add('hidden');
+  voiceToggle.disabled = false;
+  running = true;
+  loop();
+}
+
+async function tryApplyWideZoom(stream){
+  try{
+    const track = stream.getVideoTracks()[0];
+    if(!track || !track.getCapabilities) return;
+    const caps = track.getCapabilities();
+    if(caps && typeof caps.zoom === 'object' && caps.zoom.min !== undefined){
+      const target = caps.zoom.min; // najszerszy możliwy widok
+      await track.applyConstraints({ advanced:[{ zoom: target }] });
+      console.info('Ustawiono najszerszy dostępny zoom:', target, 'zakres:', caps.zoom);
+    }
+  }catch(e){
+    console.warn('Ta kamera nie pozwala programowo zmienić zoomu:', e);
+  }
+}
+
+function fitStageToVideo(){
+  if(video.videoWidth && video.videoHeight){
+    stage.style.aspectRatio = video.videoWidth + ' / ' + video.videoHeight;
+    overlay.width = video.videoWidth;
+    overlay.height = video.videoHeight;
+  }
+}
+video.addEventListener('loadedmetadata', fitStageToVideo);
+
+const LM = {
+  nose:0, leftEar:7, rightEar:8,
+  leftShoulder:11, rightShoulder:12,
+  leftElbow:13, rightElbow:14,
+  leftWrist:15, rightWrist:16,
+  leftHip:23, rightHip:24,
+  leftKnee:25, rightKnee:26,
+  leftAnkle:27, rightAnkle:28,
+};
+
+function angle(a,b){ return Math.atan2(b.y-a.y, b.x-a.x) * 180/Math.PI; }
+// Angle at point B, formed by rays B->A and B->C (e.g. the bend at an elbow between shoulder and wrist)
+function angleBetween(A,B,C){
+  const v1x=A.x-B.x, v1y=A.y-B.y, v2x=C.x-B.x, v2y=C.y-B.y;
+  const m1=Math.hypot(v1x,v1y), m2=Math.hypot(v2x,v2y);
+  if(m1<1e-6 || m2<1e-6) return null;
+  let cos = (v1x*v2x+v1y*v2y)/(m1*m2);
+  cos = Math.max(-1, Math.min(1, cos));
+  return Math.acos(cos) * 180/Math.PI;
+}
+// Tilt angle that stays near 0° for a level line regardless of which point has the
+// smaller x-coordinate in the raw camera frame (fixes the ±180° wrap-around bug).
+function tiltAngle(a,b){ const dx = Math.abs(b.x-a.x) || 0.0001; const dy = b.y-a.y; return Math.atan2(dy,dx) * 180/Math.PI; }
+function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+function mid(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
+
+function findHand(handsResult, label){
+  if(!handsResult || !handsResult.landmarks) return null;
+  for(let i=0;i<handsResult.landmarks.length;i++){
+    const h = handsResult.handednesses?.[i]?.[0]?.categoryName;
+    if(h === label) return handsResult.landmarks[i];
+  }
+  return null;
+}
+
+function curlRatio(hand){
+  // average across index/middle/ring: dist(mcp,tip) vs dist(mcp,pip)*2 (straight ~1, curled <1)
+  const pairs = [[5,6,8],[9,10,12],[13,14,16]];
+  let sum=0,n=0;
+  pairs.forEach(([mcp,pip,tip])=>{
+    const dMcpPip = dist(hand[mcp],hand[pip]);
+    const dMcpTip = dist(hand[mcp],hand[tip]);
+    if(dMcpPip>0){ sum += dMcpTip/(2*dMcpPip); n++; }
+  });
+  return n? sum/n : null;
+}
+
+function computeMetrics(lm, handsResult){
+  const lS=lm[LM.leftShoulder], rS=lm[LM.rightShoulder];
+  const lH=lm[LM.leftHip], rH=lm[LM.rightHip];
+  const lE=lm[LM.leftEar], rE=lm[LM.rightEar];
+  const nose=lm[LM.nose];
+  const lKnee=lm[LM.leftKnee], rKnee=lm[LM.rightKnee];
+  const lAnkle=lm[LM.leftAnkle];
+  const rElbow=lm[LM.rightElbow], rShoulder=lm[LM.rightShoulder];
+  const lElbow=lm[LM.leftElbow];
+  const shoulderWidth = dist(lS,rS) || 0.001;
+  const hipWidth = dist(lH,rH) || 0.001;
+  const shoulderMid = mid(lS,rS);
+  const hipMid = mid(lH,rH);
+
+  const leftHand = findHand(handsResult,'Left');
+  const rightHand = findHand(handsResult,'Right');
+
+  let wristAngle=null, thumbAboveWrist=null, curlL=null, curlR=null, neckAngleDeg=null;
+
+  // guitar-neck proxy angle: shoulder -> wrist (or hand wrist landmark if available), relative to vertical
+  const handRef = leftHand ? {x:leftHand[0].x*1, y:leftHand[0].y*1} : lm[LM.leftWrist];
+  const dx = handRef.x - lS.x, dy = handRef.y - lS.y;
+  neckAngleDeg = Math.atan2(dx, -dy) * 180/Math.PI;
+
+  if(leftHand){
+    const wrist=leftHand[0], middleMcp=leftHand[9], thumbTip=leftHand[4];
+    wristAngle = angle(lm[LM.leftElbow], wrist) - angle(wrist, middleMcp);
+    thumbAboveWrist = (wrist.y - thumbTip.y) / shoulderWidth;
+    curlL = curlRatio(leftHand);
+  }
+  if(rightHand){
+    curlR = curlRatio(rightHand);
+  }
+
+  const lWrist=lm[LM.leftWrist], rWrist=lm[LM.rightWrist];
+
+  return {
+    shoulderTilt: tiltAngle(lS,rS),
+    earTilt: tiltAngle(lE,rE),
+    spineLeanX: (shoulderMid.x - hipMid.x) / shoulderWidth,
+    noseOffsetX: (nose.x - shoulderMid.x) / shoulderWidth,
+    kneeDiffY: (lKnee.y - rKnee.y) / hipWidth,
+    rightElbowRelX: (rElbow.x - lm[LM.rightHip].x) / hipWidth,
+    rightElbowRelY: (rElbow.y - rShoulder.y) / shoulderWidth,
+    leftElbowAngleDeg: angleBetween(lS, lElbow, lWrist),
+    leftElbowRelX: Math.abs(lElbow.x - lH.x) / hipWidth,
+    armsDropDelta: ((rWrist.y - hipMid.y) + (lWrist.y - hipMid.y)) / 2 / hipWidth,
+    neckAngleDeg, wristAngle, thumbAboveWrist, curlL, curlR,
+    ankleVisible: (lAnkle.visibility ?? 1) > 0.4 && (lKnee.visibility ?? 1) > 0.4,
+    leftHandVisible: !!leftHand, rightHandVisible: !!rightHand,
+  };
+}
+
+function smoothMetrics(raw){
+  const keys = ['shoulderTilt','earTilt','spineLeanX','noseOffsetX','kneeDiffY','rightElbowRelX','rightElbowRelY','leftElbowAngleDeg','leftElbowRelX','armsDropDelta','neckAngleDeg','wristAngle','thumbAboveWrist','curlL','curlR'];
+  keys.forEach(k=>{
+    const v = raw[k];
+    if(v===null || v===undefined) return;
+    smoothed[k] = (smoothed[k]===undefined) ? v : smoothed[k]*(1-EMA_ALPHA) + v*EMA_ALPHA;
+  });
+  return { ...raw, ...smoothed };
+}
+
+function evaluate(m){
+  const usingPersonal = mode==='personal' && personalBaseline;
+  const base = usingPersonal ? personalBaseline : (genericOffset || GENERIC_BASELINE);
+  const sensMult = SENSITIVITY[sensitivityLevel-1].mult;
+  const tol = usingPersonal ? scaledTol(BASE_PERSONAL_TOL, sensMult) : scaledTol(BASE_GENERIC_TOL, sensMult);
+  const results = {};
+  const committed = {}; // stabilized (hysteresis) status per rule id, used for voice + rosette + "all good"
+
+  function commit(id, raw, hint, holdMs){
+    const st = updateRuleWithHysteresis(id, raw, hint, holdMs);
+    committed[id] = st;
+    return st;
+  }
+
+  // Core rules (available in both modes)
+  const shoulderRaw = Math.abs(m.shoulderTilt - (base.shoulderTilt||0)) < tol.shoulders ? 'ok' : 'bad';
+  results.shoulders = [shoulderRaw, shoulderRaw==='ok' ? trR('rule.ok') : (m.shoulderTilt>0?trR('msg.shoulders.rightDown'):trR('msg.shoulders.leftDown'))];
+  commit('shoulders', shoulderRaw, results.shoulders[1], HOLD_MS.normal);
+
+  const leanDelta = m.spineLeanX - (base.spineLeanX||0);
+  const leanRaw = Math.abs(leanDelta) < tol.lean ? 'ok' : 'bad';
+  results.lean = [leanRaw, leanRaw==='ok'?trR('rule.ok'):(leanDelta>0?trR('msg.lean.right'):trR('msg.lean.left'))];
+  commit('lean', leanRaw, results.lean[1], HOLD_MS.normal);
+
+  const headDelta = Math.abs(m.earTilt-(base.earTilt||0)) + Math.abs(m.noseOffsetX-(base.noseOffsetX||0))*12;
+  const headRaw = headDelta < tol.head ? 'ok':'bad';
+  results.head = [headRaw, headRaw==='ok'?trR('rule.ok'):trR('msg.head.bad')];
+  commit('head', headRaw, results.head[1], HOLD_MS.normal);
+
+  let kneeDelta = 0, kneeRaw = 'ok';
+  if(supportType==='stool'){
+    kneeDelta = m.kneeDiffY - (base.kneeDiffY||0);
+    kneeRaw = kneeDelta < tol.knee ? 'ok':'bad';
+    results.knee = [kneeRaw, kneeRaw==='ok'?trR('msg.knee.ok'):trR('msg.knee.bad')];
+    commit('knee', kneeRaw, results.knee[1], HOLD_MS.normal);
+  } else {
+    setRuleDom('knee','unknown',trR('msg.knee.notNeeded'), false);
+    ruleTiming.knee.status = 'unknown';
+    ruleTiming.knee.pendingStatus = null;
+  }
+
+  const ARMS_DROP_THRESHOLD = 0.55;
+  const armsRaw = m.armsDropDelta < ARMS_DROP_THRESHOLD ? 'ok' : 'bad';
+  results.arms = [armsRaw, armsRaw==='ok' ? trR('rule.ok') : trR('msg.arms.bad')];
+  commit('arms', armsRaw, results.arms[1], HOLD_MS.normal);
+
+  // Starting estimates, not yet tuned against real playing footage — the goal is to flag two
+  // classic beginner mistakes: elbow pinned against the ribs, and elbow locked straight (both
+  // make it impossible to move the fretting hand freely along the neck).
+  const ELBOWL_MIN_DIST = 0.22;   // below this (normalized to hip width) the elbow reads as "tucked in"
+  const ELBOWL_MAX_STRAIGHT = 162; // degrees — above this the arm reads as "locked straight"
+  let elbowLRaw = 'ok', elbowLMsg = trR('rule.ok');
+  if(m.leftElbowRelX!==null && m.leftElbowRelX < ELBOWL_MIN_DIST){
+    elbowLRaw = 'bad'; elbowLMsg = trR('msg.elbowL.tucked');
+  } else if(m.leftElbowAngleDeg!==null && m.leftElbowAngleDeg > ELBOWL_MAX_STRAIGHT){
+    elbowLRaw = 'bad'; elbowLMsg = trR('msg.elbowL.straight');
+  }
+  results.elbowL = [elbowLRaw, elbowLMsg];
+  commit('elbowL', elbowLRaw, elbowLMsg, HOLD_MS.normal);
+
+  footReminder.classList.toggle('show', supportType==='stool' && !m.ankleVisible);
+
+  // Fine rules (personal mode only)
+  const fineAvailable = mode==='personal' && !!personalBaseline;
+  ['neck','elbow','wrist','thumb','curlL','curlR'].forEach(id=>{
+    if(!fineAvailable){
+      setRuleDom(id,'unknown',trR('rule.requiresCalib'), false);
+      ruleTiming[id].status = 'unknown';
+      ruleTiming[id].pendingStatus = null;
+    }
+  });
+
+  if(fineAvailable){
+    const neckDelta = m.neckAngleDeg - personalBaseline.neckAngleDeg;
+    const neckRaw = Math.abs(neckDelta) < tol.neck ? 'ok':'bad';
+    results.neck = [neckRaw, neckRaw==='ok' ? `${trR('rule.ok')} (~${Math.round(m.neckAngleDeg)}°)` : (neckDelta>0?trR('msg.neck.low'):trR('msg.neck.high'))];
+    commit('neck', neckRaw, results.neck[1], HOLD_MS.beta);
+
+    const elbowDelta = Math.abs(m.rightElbowRelX-personalBaseline.rightElbowRelX) + Math.abs(m.rightElbowRelY-personalBaseline.rightElbowRelY);
+    const elbowRaw = elbowDelta < tol.elbow ? 'ok':'bad';
+    results.elbow = [elbowRaw, elbowRaw==='ok'?trR('msg.elbow.ok'):trR('msg.elbow.bad')];
+    commit('elbow', elbowRaw, results.elbow[1], HOLD_MS.beta);
+
+    if(m.leftHandVisible && personalBaseline.wristAngle!==null){
+      const wristDelta = Math.abs(m.wristAngle-personalBaseline.wristAngle);
+      const wristRaw = wristDelta < tol.wrist ? 'ok':'bad';
+      results.wrist = [wristRaw, wristRaw==='ok'?trR('msg.wrist.ok'):trR('msg.wrist.bad')];
+      commit('wrist', wristRaw, results.wrist[1], HOLD_MS.beta);
+
+      const thumbDelta = m.thumbAboveWrist - personalBaseline.thumbAboveWrist;
+      const thumbRaw = thumbDelta < tol.thumb ? 'ok':'bad';
+      results.thumb = [thumbRaw, thumbRaw==='ok'?trR('msg.thumb.ok'):trR('msg.thumb.bad')];
+      commit('thumb', thumbRaw, results.thumb[1], HOLD_MS.beta);
+
+      if(personalBaseline.curlL!==null){
+        const curlDelta = Math.abs(m.curlL-personalBaseline.curlL);
+        const curlRaw = curlDelta < tol.curl ? 'ok':'bad';
+        results.curlL = [curlRaw, curlRaw==='ok'?trR('msg.curl.ok'):trR('msg.curl.bad')];
+        commit('curlL', curlRaw, results.curlL[1], HOLD_MS.beta);
+      } else { setRuleDom('curlL','unknown',trR('msg.noLeftHandCalib'), false); }
+    } else if(!personalBaseline.wristAngle){
+      setRuleDom('wrist','unknown',trR('msg.noLeftHandCalib'), false);
+      setRuleDom('thumb','unknown',trR('msg.noLeftHandCalib'), false);
+      setRuleDom('curlL','unknown',trR('msg.noLeftHandCalib'), false);
+    } else {
+      setRuleDom('wrist','unknown',trR('msg.noLeftHandNow'), false);
+      setRuleDom('thumb','unknown',trR('msg.noLeftHandNow'), false);
+      setRuleDom('curlL','unknown',trR('msg.noLeftHandNow'), false);
+    }
+
+    if(m.rightHandVisible && personalBaseline.curlR!==null){
+      const curlRDelta = Math.abs(m.curlR-personalBaseline.curlR);
+      const curlRRaw = curlRDelta < tol.curl ? 'ok':'bad';
+      results.curlR = [curlRRaw, curlRRaw==='ok'?trR('msg.curl.ok'):trR('msg.curl.bad')];
+      commit('curlR', curlRRaw, results.curlR[1], HOLD_MS.beta);
+    } else {
+      setRuleDom('curlR','unknown',trR('msg.noRightHandNow'), false);
+    }
+  }
+
+  const activeRules = RULES.filter(r => (r.generic || fineAvailable) && !(r.id==='knee' && supportType!=='stool'));
+  const okCount = activeRules.filter(r => ruleTiming[r.id].status==='ok').length;
+  let scorePct = activeRules.length ? Math.round(okCount/activeRules.length*100) : 0;
+  const HAND_CRITICAL = ['arms','elbow','wrist','thumb','curlL','curlR'];
+  const handRuleBad = HAND_CRITICAL.some(id => committed[id]==='bad');
+  if(handRuleBad) scorePct = Math.min(scorePct, SENSITIVITY[sensitivityLevel-1].cap);
+  setRosette(scorePct);
+
+  const debugNumbers = document.getElementById('debugNumbers');
+  let handDebug = '';
+  if(fineAvailable){
+    const elbowD = Math.abs(m.rightElbowRelX-personalBaseline.rightElbowRelX) + Math.abs(m.rightElbowRelY-personalBaseline.rightElbowRelY);
+    const neckD = Math.abs(m.neckAngleDeg-personalBaseline.neckAngleDeg);
+    handDebug = `
+łokieć: różnica=${elbowD.toFixed(3)} (próg ${tol.elbow}) → ${results.elbow ? results.elbow[0] : '-'} | ustabilizowane: ${committed.elbow||'-'}
+gryf:   różnica=${neckD.toFixed(1)}° (próg ${tol.neck}°) → ${results.neck ? results.neck[0] : '-'} | ustabilizowane: ${committed.neck||'-'}
+kciuk: baza=${personalBaseline.thumbAboveWrist===null?'brak':personalBaseline.thumbAboveWrist.toFixed(3)}  teraz=${m.thumbAboveWrist===null||m.thumbAboveWrist===undefined?'brak (nie widzę dłoni)':m.thumbAboveWrist.toFixed(3)} | ustabilizowane: ${committed.thumb||'-'}
+nadgarstek: baza=${personalBaseline.wristAngle===null?'brak':personalBaseline.wristAngle.toFixed(1)}  teraz=${m.wristAngle===null||m.wristAngle===undefined?'brak (nie widzę dłoni)':m.wristAngle.toFixed(1)} | ustabilizowane: ${committed.wrist||'-'}`;
+  }
+  debugNumbers.textContent =
+`barki:  ${m.shoulderTilt.toFixed(1)}°  (cel ${(base.shoulderTilt||0).toFixed(1)}°, próg ±${tol.shoulders}°) → ${shoulderRaw} | ustabilizowane: ${committed.shoulders}
+plecy:  ${leanDelta.toFixed(3)}  (próg ±${tol.lean}) → ${leanRaw} | ustabilizowane: ${committed.lean}
+głowa:  ${headDelta.toFixed(1)}  (próg ${tol.head}) → ${headRaw} | ustabilizowane: ${committed.head}
+kolano: ${supportType==='stool' ? `${kneeDelta.toFixed(3)}  (próg <${tol.knee}) → ${kneeRaw} | ustabilizowane: ${committed.knee}` : 'reguła wyłączona (podgitarnik)'}
+ręce: ${m.armsDropDelta.toFixed(3)}  (próg <${ARMS_DROP_THRESHOLD}) → ${armsRaw} | ustabilizowane: ${committed.arms}
+lewa dłoń widoczna: ${m.leftHandVisible ? 'tak' : 'nie'}   prawa dłoń widoczna: ${m.rightHandVisible ? 'tak' : 'nie'}
+tryb: ${mode}${personalBaseline ? ' (kalibracja zapisana)' : ''}${genericOffset ? ' (wypoziomowano)' : ''} | czułość: ${trR(SENSITIVITY[sensitivityLevel-1].labelKey)} (x${sensMult.toFixed(2)}, limit rąk ${SENSITIVITY[sensitivityLevel-1].cap}%)${handDebug}`;
+
+  // Voice + "all good" now use the STABILIZED (committed) status — same as the cards — not raw per-frame noise.
+  const idToPhrase = trR('idToPhrase');
+  const badRules = Object.keys(committed).filter(id => committed[id]==='bad');
+
+  if(badRules.length){
+    const nowT = performance.now();
+    if(nowT - lastPositiveSpeakTime >= 3000){
+      allGoodSince = null;
+      speechCycle = (speechCycle+1) % badRules.length;
+      const pickId = badRules[speechCycle];
+      speak(idToPhrase[pickId] || trR('rule.unavailable'), pickId);
+    }
+    // w przeciwnym razie: 3 sekundy ciszy po komunikacie "wszystko dobrze" — nie strofujemy natychmiast
+  } else {
+    speechText.textContent = trR('speech.greatPosture');
+    const now = performance.now();
+    if(allGoodSince===null) allGoodSince = now;
+    if(now - allGoodSince > 2000 && now - lastPositiveSpeakTime > 14000){
+      lastPositiveSpeakTime = now;
+      const positives = [
+        {id:'pos1', text:trR('voiceGood1')},
+        {id:'pos2', text:trR('voiceGood2')},
+        {id:'pos3', text:trR('voiceGood3')},
+      ];
+      const pick = positives[Math.floor(Math.random()*positives.length)];
+      speechText.textContent = pick.text;
+      try{ if(voiceOn && !calibrationActive) playClip(pick.id); }catch(e){}
+    }
+  }
+
+  return { neckAngleDeg: m.neckAngleDeg };
+}
+
+function statusColor(id){
+  const s = ruleTiming[id]?.status;
+  if(s==='ok') return '#2FBE6C';
+  if(s==='bad') return '#E6483A';
+  return '#C9A227';
+}
+
+function drawSkeleton(lm, handsResult){
+  ctx.clearRect(0,0,overlay.width,overlay.height);
+  const W=overlay.width, H=overlay.height;
+  const P = (i)=>({x:lm[i].x*W, y:lm[i].y*H});
+  ctx.lineWidth = 18;
+  ctx.lineCap='round';
+
+  function seg(a,b,color,width){
+    ctx.strokeStyle=color;
+    ctx.lineWidth = width || 18;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  }
+  function dot(p,color,r=8){ ctx.fillStyle=color; ctx.beginPath(); ctx.arc(p.x,p.y,r,0,7); ctx.fill(); }
+
+  const neutral = 'rgba(246,241,231,0.6)';
+  seg(P(LM.leftHip),P(LM.rightHip), neutral);
+  seg(P(LM.rightShoulder),P(LM.rightHip), neutral);
+  seg(P(LM.rightHip),P(LM.rightKnee), neutral);
+  seg(P(LM.rightKnee),P(LM.rightAnkle), neutral);
+
+  seg(P(LM.leftShoulder),P(LM.rightShoulder), statusColor('shoulders'));
+  const shoulderMidPx = {x:(P(LM.leftShoulder).x+P(LM.rightShoulder).x)/2, y:(P(LM.leftShoulder).y+P(LM.rightShoulder).y)/2};
+  const hipMidPx = {x:(P(LM.leftHip).x+P(LM.rightHip).x)/2, y:(P(LM.leftHip).y+P(LM.rightHip).y)/2};
+  seg(shoulderMidPx, hipMidPx, statusColor('lean'));
+  seg(P(LM.leftEar),P(LM.rightEar), statusColor('head'));
+  const kneeColor = supportType==='stool' ? statusColor('knee') : neutral;
+  seg(P(LM.leftHip),P(LM.leftKnee), kneeColor);
+  seg(P(LM.leftKnee),P(LM.leftAnkle), kneeColor);
+  const fineHandsAvailable = mode==='personal' && !!personalBaseline;
+  const rightArmColor = statusColor(fineHandsAvailable ? 'elbow' : 'arms');
+  const leftArmColor = statusColor(fineHandsAvailable ? 'wrist' : 'arms');
+  seg(P(LM.rightShoulder),P(LM.rightElbow), rightArmColor);
+  seg(P(LM.rightElbow),P(LM.rightWrist), rightArmColor);
+  seg(P(LM.leftShoulder),P(LM.leftElbow), leftArmColor);
+  seg(P(LM.leftElbow),P(LM.leftWrist), leftArmColor);
+
+  Object.values(LM).forEach(i=>{ dot(P(i), 'rgba(246,241,231,0.9)', 6); });
+  dot(P(LM.leftShoulder), statusColor('shoulders'), 9);
+  dot(P(LM.rightShoulder), statusColor('shoulders'), 9);
+  dot(P(LM.leftKnee), kneeColor, 9);
+  dot(P(LM.rightElbow), rightArmColor, 9);
+
+  if(handsResult && handsResult.landmarks){
+    handsResult.landmarks.forEach(hand=>{
+      for(let i=0;i<21;i++){
+        const p={x:hand[i].x*W, y:hand[i].y*H};
+        dot(p, 'rgba(201,162,39,0.95)', 5);
+      }
+    });
+  }
+}
+
+let lastVideoTime=-1;
+let lastMetrics=null, lastAngleInfo=null;
+let noPersonSince=null;
+let gpuFallbackDone=false;
+
+async function reinitOnCPU(){
+  if(gpuFallbackDone) return false;
+  gpuFallbackDone = true;
+  try{
+    const files = await FilesetResolver.forVisionTasks("../vendor/mediapipe/wasm");
+    poseLandmarker = await PoseLandmarker.createFromOptions(files, { baseOptions:{ modelAssetPath:"../vendor/mediapipe/models/pose_landmarker_lite.task", delegate:"CPU" }, runningMode:"VIDEO", numPoses:1, minPoseDetectionConfidence:0.5, minPosePresenceConfidence:0.5, minTrackingConfidence:0.5 });
+    handLandmarker = await HandLandmarker.createFromOptions(files, { baseOptions:{ modelAssetPath:"../vendor/mediapipe/models/hand_landmarker.task", delegate:"CPU" }, runningMode:"VIDEO", numHands:2, minHandDetectionConfidence:0.5, minHandPresenceConfidence:0.5, minTrackingConfidence:0.5 });
+    return true;
+  }catch(e){
+    console.error('Fallback na CPU też się nie powiódł:', e);
+    return false;
+  }
+}
+
+function showDebug(msg, isError){
+  debugBadge.textContent = msg;
+  debugBadge.classList.toggle('bad', !!isError);
+  debugBadge.classList.remove('hidden');
+}
+function hideDebug(){ debugBadge.classList.add('hidden'); }
+
+async function loop(){
+  if(!running) return;
+  if(video.currentTime !== lastVideoTime){
+    lastVideoTime = video.currentTime;
+    const ts = performance.now();
+    try{
+      const poseResult = poseLandmarker.detectForVideo(video, ts);
+      const handsResult = handLandmarker ? handLandmarker.detectForVideo(video, ts) : null;
+      if(poseResult.landmarks && poseResult.landmarks.length){
+        noPersonSince = null;
+        hideDebug();
+        const lm = poseResult.landmarks[0];
+        lastPoseLm = lm; lastHandsResult = handsResult;
+        drawSkeleton(lm, handsResult);
+        const raw = computeMetrics(lm, handsResult);
+        const m = smoothMetrics(raw);
+        lastMetrics = m;
+        lastAngleInfo = evaluate(m);
+      } else {
+        ctx.clearRect(0,0,overlay.width,overlay.height);
+        if(noPersonSince===null) noPersonSince = ts;
+        if(ts - noPersonSince > 2000){
+          showDebug('Nie widzę sylwetki — sprawdź kadr / oświetlenie', false);
+        }
+      }
+    }catch(err){
+      console.error('Błąd detekcji:', err);
+      showDebug('Błąd detekcji: ' + (err && err.message ? err.message : String(err)), true);
+      const ok = await reinitOnCPU();
+      if(ok) showDebug('Przełączono na tryb CPU, próbuję dalej...', false);
+    }
+  }
+  requestAnimationFrame(loop);
+}
+
+/* ---------- Calibration flow (burst capture) ---------- */
+let calibShots = [];
+let calibTimer = null;
+const countdownBadge = document.getElementById('countdownBadge');
+const calibHint = document.getElementById('calibHint');
+
+function openCalibOverlay(){
+  calibShots = [];
+  calibrationActive = true;
+  cancelSpeech();
+  calibOverlay.classList.remove('hidden');
+  calibStage1.style.display='block';
+  calibStage3.style.display='none';
+  countdownBadge.classList.add('hidden');
+  calibHint.textContent='';
+}
+function closeCalibOverlay(){
+  calibrationActive = false;
+  calibOverlay.classList.add('hidden');
+  countdownBadge.classList.add('hidden');
+  if(calibTimer) clearInterval(calibTimer);
+}
+
+function captureSnapshot(){
+  const flashEl = document.getElementById('flashEl');
+  flashEl.classList.remove('go'); void flashEl.offsetWidth; flashEl.classList.add('go');
+  const small = document.createElement('canvas');
+  small.width = 160; small.height = Math.round(160 * overlay.height/overlay.width);
+  const sctx = small.getContext('2d');
+  sctx.translate(small.width,0); sctx.scale(-1,1); // mirror to match display
+  sctx.drawImage(video, 0,0, small.width, small.height);
+  const img = small.toDataURL('image/jpeg',0.55);
+  const metrics = lastMetrics ? { ...lastMetrics } : null;
+  calibShots.push({ img, metrics });
+}
+
+function renderShotsGrid(){
+  shotsGrid.innerHTML='';
+  for(let i=0;i<4;i++){
+    const shot = calibShots[i];
+    const cell = document.createElement('div');
+    if(shot){
+      cell.className='shot-card' + (shot.metrics ? '' : ' no-metrics');
+      cell.innerHTML = `<span class="num">${i+1}</span><img src="${shot.img}">`;
+      cell.addEventListener('click', ()=> chooseShot(i));
+    } else {
+      cell.className='shot-card empty';
+      cell.textContent = '—';
+    }
+    shotsGrid.appendChild(cell);
+  }
+}
+
+function chooseShot(i){
+  const shot = calibShots[i];
+  if(!shot || !shot.metrics){
+    calibHint.textContent = trR('calib.noPersonDetected');
+    return;
+  }
+  calibHint.textContent='';
+  Array.from(shotsGrid.children).forEach((c,idx)=>c.classList.toggle('chosen', idx===i));
+  personalBaseline = {
+    shoulderTilt: shot.metrics.shoulderTilt, earTilt: shot.metrics.earTilt,
+    spineLeanX: shot.metrics.spineLeanX, noseOffsetX: shot.metrics.noseOffsetX,
+    kneeDiffY: shot.metrics.kneeDiffY, neckAngleDeg: shot.metrics.neckAngleDeg,
+    rightElbowRelX: shot.metrics.rightElbowRelX, rightElbowRelY: shot.metrics.rightElbowRelY,
+    wristAngle: shot.metrics.wristAngle ?? null, thumbAboveWrist: shot.metrics.thumbAboveWrist ?? null,
+    curlL: shot.metrics.curlL ?? null, curlR: shot.metrics.curlR ?? null,
+    savedAt: new Date().toISOString()
+  };
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(personalBaseline)); }catch(e){}
+  mode='personal';
+  updateModeUI();
+  setTimeout(closeCalibOverlay, 500);
+  speechText.textContent = trR('speech.calibSaved');
+  cancelSpeech(); // stop anything else that might currently be playing, so it doesn't overlap
+  if(voiceOn) playClip('calib');
+  lastSpeakTime = performance.now(); // hold off the next correction message so it can't immediately overlap this one
+  lastSpokenId = null;
+}
+
+function startShotSequence(){
+  calibOverlay.classList.add('hidden'); // hide cards so live camera is fully visible
+  countdownBadge.classList.remove('hidden');
+  let shotNum=0;
+  let secLeft=5;
+  countdownNum.textContent = secLeft;
+  shotIndexEl.textContent = shotNum+1;
+  calibTimer = setInterval(()=>{
+    secLeft--;
+    if(secLeft<=0){
+      captureSnapshot();
+      shotNum++;
+      if(shotNum>=4){
+        clearInterval(calibTimer);
+        countdownBadge.classList.add('hidden');
+        calibOverlay.classList.remove('hidden');
+        calibStage1.style.display='none';
+        calibStage3.style.display='block';
+        renderShotsGrid();
+        return;
+      }
+      secLeft=5;
+      shotIndexEl.textContent = shotNum+1;
+    }
+    countdownNum.textContent = secLeft;
+  }, 1000);
+}
+
+calibrateBtn.addEventListener('click', ()=>{
+  if(!running){ speechText.textContent=trR('speech.needCamera'); return; }
+  openCalibOverlay();
+});
+calibStartBtn.addEventListener('click', startShotSequence);
+calibCancelBtn.addEventListener('click', closeCalibOverlay);
+retakeBtn.addEventListener('click', ()=>{ calibShots=[]; calibStage1.style.display='block'; calibStage3.style.display='none'; });
+
+/* ---------- Mode switching ---------- */
+function updateModeUI(){
+  modeGenericBtn.classList.toggle('active', mode==='generic');
+  modePersonalBtn.classList.toggle('active', mode==='personal');
+  const modeIndicator = document.getElementById('modeIndicator');
+  const modeIndicatorText = document.getElementById('modeIndicatorText');
+  const resetCalibBtn = document.getElementById('resetCalibBtn');
+  if(mode==='personal' && personalBaseline){
+    const d = new Date(personalBaseline.savedAt);
+    calibStatus.innerHTML = `${trR('calib.savedPrefix')}${d.toLocaleDateString(trR('dateLocale'))} ${d.toLocaleTimeString(trR('dateLocale')).slice(0,5)}`;
+    modeIndicator.className = 'mode-indicator personal';
+    modeIndicatorText.textContent = trR('mode.indicatorPersonal');
+    resetCalibBtn.style.display = 'inline-block';
+  } else {
+    calibStatus.textContent = genericOffset ? trR('calib.manual') : trR('calib.none');
+    modeIndicator.className = 'mode-indicator generic';
+    modeIndicatorText.textContent = trR('mode.indicatorGeneric');
+    resetCalibBtn.style.display = personalBaseline ? 'inline-block' : 'none';
+  }
+}
+modeGenericBtn.addEventListener('click', ()=>{ mode='generic'; updateModeUI(); });
+modePersonalBtn.addEventListener('click', ()=>{
+  if(!personalBaseline){ openCalibOverlay(); return; }
+  mode='personal'; updateModeUI();
+});
+document.getElementById('resetCalibBtn').addEventListener('click', ()=>{
+  personalBaseline = null;
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  mode = 'generic';
+  updateModeUI();
+  speechText.textContent = trR('speech.calibReset');
+});
+
+const LEVEL_KEY = 'postawaLevelOffsetV1';
+try{
+  const savedLevel = localStorage.getItem(LEVEL_KEY);
+  if(savedLevel) genericOffset = JSON.parse(savedLevel);
+}catch(e){}
+
+levelBtn.addEventListener('click', ()=>{
+  if(!lastMetrics){ speechText.textContent = trR('speech.waitForBody'); return; }
+  genericOffset = {
+    shoulderTilt: lastMetrics.shoulderTilt, earTilt: lastMetrics.earTilt,
+    spineLeanX: lastMetrics.spineLeanX, noseOffsetX: lastMetrics.noseOffsetX,
+    kneeDiffY: lastMetrics.kneeDiffY
+  };
+  try{ localStorage.setItem(LEVEL_KEY, JSON.stringify(genericOffset)); }catch(e){}
+  speechText.textContent = trR('speech.levelSaved');
+  levelBtn.textContent = trR('mode.levelDone');
+  setTimeout(()=>{ levelBtn.textContent = trR('mode.level'); }, 2000);
+});
+
+// load saved calibration
+try{
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if(saved){ personalBaseline = JSON.parse(saved); mode='personal'; }
+}catch(e){}
+updateModeUI();
+
+/* ---------- Voice toggle ---------- */
+voiceToggle.addEventListener('click', ()=>{
+  voiceOn=!voiceOn;
+  voiceToggle.textContent = voiceOn? trR('mode.voiceOn'):trR('mode.voiceOff');
+  if(!voiceOn) cancelSpeech();
+});
+
+/* ---------- Fullscreen ---------- */
+fullscreenBtn.addEventListener('click', async ()=>{
+  try{
+    if(!document.fullscreenElement){
+      if(stage.requestFullscreen) await stage.requestFullscreen();
+      else if(stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();
+      else throw new Error('no api');
+    } else {
+      if(document.exitFullscreen) await document.exitFullscreen();
+      else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+  }catch(e){
+    stage.classList.toggle('pseudo-fullscreen');
+  }
+});
+
+/* ---------- Start ---------- */
+startBtn.addEventListener('click', async ()=>{
+  startBtn.disabled=true;
+  startBtn.textContent=trR('veil.loading');
+  try{
+    await initModels();
+    await startCamera();
+  }catch(e){
+    console.error(e);
+    startBtn.textContent=trR('veil.retry');
+    startBtn.disabled=false;
+    veilMsg.textContent = (e && e.message) ? e.message : trR('unknownError');
+  }
+});
+
+window.addEventListener('resize', fitStageToVideo);
+
+/* ---------- App shell integration (added for merged app) ---------- */
+function stopCamera(){
+  running = false;
+  if(currentCameraStream){ currentCameraStream.getTracks().forEach(t=>t.stop()); currentCameraStream = null; }
+  video.srcObject = null;
+  veil.classList.remove('hidden');
+  startBtn.disabled = false;
+  startBtn.textContent = trR('veil.startBtn');
+  calibrationActive = false; // safety net — never let this get stuck true if calibration was interrupted mid-way
+}
+window.addEventListener('message', (e)=>{
+  const d = e.data;
+  if(!d || typeof d !== 'object') return;
+  if(d.type === 'app:theme'){
+    const t = THEMES.find(x=>x.id===d.themeId);
+    if(t) applyTheme(t);
+  }
+  if(d.type === 'app:pause'){
+    if(running) stopCamera();
+  }
+  if(d.type === 'app:lang' && (['pl','en','de','fr','es','pt'].includes(d.value))){
+    currentLang = d.value;
+    try{ localStorage.setItem('appLangV1', currentLang); }catch(e){}
+    applyI18nModule();
+  }
+});
+function applyI18nModule(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const v = trR(el.getAttribute('data-i18n'));
+    if(typeof v === 'string') el.textContent = v;
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el=>{
+    const v = trR(el.getAttribute('data-i18n-html'));
+    if(typeof v === 'string') el.innerHTML = v;
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{
+    const v = trR(el.getAttribute('data-i18n-title'));
+    if(typeof v === 'string'){ el.setAttribute('title', v); el.setAttribute('aria-label', v); }
+  });
+  refreshRuleNames();
+  sensitivityValue.textContent = trR(SENSITIVITY[sensitivityLevel-1].labelKey);
+  voiceToggle.textContent = voiceOn ? trR('mode.voiceOn') : trR('mode.voiceOff');
+  modeIndicatorText.textContent = (mode==='personal' && personalBaseline) ? trR('mode.indicatorPersonal') : trR('mode.indicatorGeneric');
+  if(!running) speechText.textContent = trR('speech.default');
+}
+applyI18nModule(); // apply whatever language was already stored, in case it's not the default
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "PostureTuner",
+  "short_name": "PostureTuner",
+  "description": "Tuner, metronom i korekta postawy dla gitary klasycznej",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1B130E",
+  "theme_color": "#1B130E",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

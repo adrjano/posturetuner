@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PostureTuner">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1B130E">
+<link rel="apple-touch-icon" href="icon-512.png">
+<link rel="manifest" href="manifest.json">
 <title>Tuner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1437,6 +1444,17 @@
     }
   }
   startBtn.addEventListener('click', startMic);
+
+  // In the packaged app, the OS permission is already granted persistently (see MainActivity.java),
+  // and resuming from background already auto-restarts the mic without a fresh tap — so there's no
+  // real reason to make the person tap "Włącz mikrofon" every single time they open the app.
+  // Only do this in the native app, not the browser version, where a fresh permission prompt is
+  // often expected/clearer as a deliberate action.
+  try{
+    if(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()){
+      startMic();
+    }
+  }catch(e){}
 
   /* ---------- App shell integration (added for merged app) ---------- */
   function stopMic(){

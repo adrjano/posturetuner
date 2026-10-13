@@ -32,6 +32,8 @@
     --radius:18px;
     --dot-normal:#E8B93E;
     --dot-accent:#E2793A;
+    --pend-line:#FFFFFF;
+    --warn:#F0B429;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -119,17 +121,25 @@
   }
   .beat-dot.active{ transform:scale(1.28); box-shadow:0 0 0 5px rgba(255,255,255,.2); }
 
-  /* Pendulum - swings side to side like a real metronome arm */
-  .pendulum-track{ position:relative; height:38px; width:100%; margin:20px auto 22px; }
+  /* Pendulum - ball flies along a thick white line and bounces off a wall at each end */
+  .pendulum-track{ position:relative; height:46px; width:100%; margin:20px auto 22px; --wall:9px; --ball:30px; }
   .pendulum-track::before{
-    content:''; position:absolute; left:2px; right:2px; top:50%; height:2px;
-    background:var(--panel-2); border-radius:2px; transform:translateY(-50%);
+    content:''; position:absolute; left:var(--wall); right:var(--wall); top:50%; height:6px;
+    background:var(--pend-line); border-radius:3px; transform:translateY(-50%);
+  }
+  .pend-wall{ position:absolute; top:0; bottom:0; width:var(--wall); background:var(--pend-line); border-radius:4px; }
+  .pend-wall.left{ left:0; }
+  .pend-wall.right{ right:0; }
+  .pend-wall.hit{ animation:wallHit .22s ease-out; }
+  @keyframes wallHit{
+    0%{ background:var(--gold); box-shadow:0 0 14px 4px var(--gold); transform:scaleX(1.5); }
+    100%{ background:var(--pend-line); box-shadow:0 0 0 0 transparent; transform:scaleX(1); }
   }
   .pendulum-dot{
-    position:absolute; top:50%; left:3%; width:30px; height:30px; border-radius:50%;
-    background:var(--bad); transform:translate(-50%,-50%);
-    transition-property:left; transition-timing-function:linear;
-    box-shadow:0 6px 14px -6px rgba(0,0,0,.5);
+    position:absolute; top:50%; width:var(--ball); height:var(--ball); border-radius:50%;
+    left:calc(var(--wall) + (100% - 2 * var(--wall) - var(--ball)) * var(--x, 0));
+    background:var(--bad); transform:translateY(-50%);
+    box-shadow:0 6px 14px -6px rgba(0,0,0,.5); transition:opacity .15s ease;
   }
 
   /* Uderzenia/takt + Kliknięcia side by side */
@@ -156,6 +166,66 @@
   .play-btn:active{ transform:scale(.94); }
   .play-btn.playing{ background:var(--bad); color:#fff; }
 
+  [hidden]{ display:none !important; }
+
+  /* Rhythm game */
+  .pulse-overlay{
+    position:fixed; inset:0; z-index:40; pointer-events:none; opacity:0;
+    background:radial-gradient(ellipse at center, transparent 35%, var(--gold) 150%);
+    box-shadow:inset 0 0 90px 30px var(--gold);
+  }
+  .pulse-overlay.go{ animation:pulseGlow .12s ease-out; }
+  @keyframes pulseGlow{ 0%{ opacity:0; } 25%{ opacity:.38; } 100%{ opacity:0; } }
+
+  .game-card h3{ margin-bottom:14px; }
+  .game-fields{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+  .game-field{ display:flex; flex-direction:column; gap:6px; font-size:13.5px; font-weight:600; color:var(--ink-soft); text-align:center; }
+  .switch-row{ display:flex; align-items:center; justify-content:center; gap:10px; font-size:15.5px; font-weight:600; color:var(--cream); cursor:pointer; }
+  .switch-row input{ width:22px; height:22px; accent-color:var(--gold); }
+  .game-hint{ margin:6px 0 14px; font-size:12.5px; line-height:1.4; color:var(--ink-soft); text-align:center; }
+  .game-btn{ width:100%; }
+  .game-msg{ margin:10px 0 0; font-size:14px; font-weight:600; color:var(--bad); text-align:center; }
+  .game-msg:empty{ display:none; }
+  .game-stage{ text-align:center; }
+  .game-stage .pendulum-track{ margin:12px auto 10px; }
+  .game-status{ min-height:30px; font-size:21px; font-weight:700; color:var(--gold); }
+  .game-counter{ min-height:70px; font-family:'Fraunces',serif; font-weight:700; font-size:64px; line-height:70px; color:var(--cream); margin-bottom:12px; }
+  .game-counter.test{ color:var(--bad); }
+  .game-result{ text-align:center; }
+  .result-score{ display:flex; align-items:center; justify-content:center; gap:14px; font-family:'Fraunces',serif; font-weight:700; font-size:76px; line-height:1.05; color:var(--gold); }
+  .result-emoji{ font-size:62px; line-height:1; }
+  .result-trophy{ height:76px; width:auto; display:block; }
+  .result-text{ margin:6px 0 14px; font-size:16px; font-weight:600; color:var(--cream); }
+  .result-text:empty{ display:none; }
+  .chart svg{ width:100%; height:auto; display:block; }
+  .chart-legend{ display:flex; flex-wrap:wrap; gap:6px 16px; justify-content:center; margin:8px 0 16px; font-size:12.5px; color:var(--ink-soft); }
+  .chart-legend .lg{ display:inline-flex; align-items:center; gap:6px; }
+  .lg i{ display:inline-block; }
+  .lg .t-grid{ width:5px; height:16px; background:var(--gold); border-radius:1px; }
+  .lg .t-clap{ width:11px; height:11px; border-radius:50%; background:var(--ink); }
+  .nick-box{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+  .nick-box label{ font-size:13.5px; font-weight:600; color:var(--ink-soft); text-align:center; }
+  .nick-input{
+    width:100%; background:var(--panel-2); color:var(--cream); border:1px solid var(--panel-2); border-radius:12px;
+    padding:12px 14px; font-family:'Inter',sans-serif; font-weight:700; font-size:16px; text-align:center;
+  }
+  .nick-input:focus{ outline:2px solid var(--gold); outline-offset:1px; }
+  .btn:disabled{ opacity:.45; cursor:default; }
+  .board{ margin-top:22px; padding-top:16px; border-top:1px solid var(--panel-2); }
+  .board-title{ font-family:'Fraunces',serif; font-size:16px; font-weight:600; margin:0 0 10px; text-align:center; color:var(--cream); }
+  .board-row{ display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:10px; font-size:15.5px; }
+  .board-row:nth-child(odd){ background:var(--panel-2); }
+  .board-row.me{ outline:2px solid var(--gold); }
+  .board-rank{ width:24px; font-weight:700; color:var(--ink-soft); }
+  .board-nick{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+  .board-score{ font-weight:700; color:var(--gold); }
+  .board-empty{ text-align:center; font-size:14px; color:var(--ink-soft); margin:6px 0; }
+  .board-actions{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:14px; }
+  .board-actions .btn{ font-size:14px; padding:9px 18px; }
+  .board-confirm{ display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; font-size:14px; }
+  .board-confirm-btns{ display:flex; gap:10px; }
+  .btn-danger{ background:var(--bad); color:#fff; }
+
 </style>
 </head>
 <body>
@@ -171,8 +241,10 @@
 
   <div class="card">
     <div class="beat-row" id="beatRow"></div>
-    <div class="pendulum-track">
-      <div class="pendulum-dot" id="pendulumDot"></div>
+    <div class="pendulum-track" id="mainTrack">
+      <div class="pend-wall left"></div>
+      <div class="pend-wall right"></div>
+      <div class="pendulum-dot"></div>
     </div>
     <div class="play-stage">
       <button class="play-btn" id="playBtn">▶</button>
@@ -215,7 +287,71 @@
       <select class="select-field" id="subdivisionSelect"></select>
     </div>
   </div>
+
+  <div class="card game-card">
+    <h3 data-i18n="gameTitle">Gra rytmiczna</h3>
+
+    <div id="gameSetup">
+      <div class="game-fields">
+        <label class="game-field"><span data-i18n="gameTempo">Tempo</span>
+          <select class="select-field" id="gameTempoSelect"></select></label>
+        <label class="game-field"><span data-i18n="gameMode">Tryb</span>
+          <select class="select-field" id="gameModeSelect">
+            <option value="adv" data-i18n="modeAdv">Zaawansowany</option>
+            <option value="beg" data-i18n="modeBeg">Początkujący</option>
+          </select></label>
+      </div>
+      <div id="gameSoundBox">
+        <label class="switch-row"><input type="checkbox" id="gameSoundChk"><span data-i18n="gameSound">Dźwięk metronomu</span></label>
+        <p class="game-hint" data-i18n="gameSoundHint"></p>
+      </div>
+      <button class="btn btn-primary game-btn" id="gameStartBtn" data-i18n="gameStart">Start</button>
+      <p class="game-msg" id="gameMsg"></p>
+    </div>
+
+    <div class="game-stage" id="gameStage" hidden>
+      <div class="game-status" id="gameStatus"></div>
+      <div class="pendulum-track" id="gameTrack">
+        <div class="pend-wall left"></div>
+        <div class="pend-wall right"></div>
+        <div class="pendulum-dot"></div>
+      </div>
+      <div class="game-counter" id="gameCounter"></div>
+      <button class="btn btn-ghost game-btn" id="gameAbortBtn" data-i18n="gameStop">Przerwij</button>
+    </div>
+
+    <div class="game-result" id="gameResult" hidden>
+      <div class="result-score" id="resultScore"></div>
+      <div class="result-text" id="resultText"></div>
+      <div class="chart" id="resultChart"></div>
+      <div class="chart-legend" id="chartLegend"></div>
+      <div class="nick-box" id="nickBox" hidden>
+        <label for="nickInput" data-i18n="nickLabel">Twój nick</label>
+        <input class="nick-input" id="nickInput" type="text" maxlength="12" autocomplete="off" autocapitalize="words" spellcheck="false">
+        <button class="btn btn-primary" id="nickSaveBtn" data-i18n="nickSave">Zapisz wynik</button>
+      </div>
+      <div class="result-text" id="nickNote"></div>
+      <button class="btn btn-primary game-btn" id="playAgainBtn" data-i18n="playAgain">Zagraj ponownie</button>
+    </div>
+
+    <div class="board">
+      <h4 class="board-title" id="boardTitle"></h4>
+      <div id="boardList"></div>
+      <div class="board-actions">
+        <button class="btn btn-ghost" id="boardClearBtn" data-i18n="boardClear">Wyczyść tablicę</button>
+        <div class="board-confirm" id="boardConfirm" hidden>
+          <div data-i18n="boardConfirm"></div>
+          <div class="board-confirm-btns">
+            <button class="btn btn-danger" id="boardYesBtn" data-i18n="boardYes">Tak, usuń</button>
+            <button class="btn btn-ghost" id="boardNoBtn" data-i18n="boardNo">Anuluj</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<div class="pulse-overlay" id="pulseOverlay" aria-hidden="true"></div>
 
 <script>
 (function(){
@@ -233,7 +369,7 @@
   const beatsPerBarSelect = document.getElementById('beatsPerBarSelect');
   const subdivisionSelect = document.getElementById('subdivisionSelect');
   const beatRow = document.getElementById('beatRow');
-  const pendulumDot = document.getElementById('pendulumDot');
+  const mainTrack = document.getElementById('mainTrack');
   const playBtn = document.getElementById('playBtn');
   const themeBtn = document.getElementById('themeBtn');
   const themePicker = document.getElementById('themePicker');
@@ -242,22 +378,130 @@
   const I18N = {
     pl: { title:'Metronom', beatsPerBar:'Uderzenia/takt', clicks:'Kliknięcia',
       beatAccent:'akcent', beatMuted:'wyciszone', beatNormal:'normalne uderzenie',
-      beatAria:(n,label)=>`Uderzenie ${n}: ${label}. Kliknij, aby zmienić.` },
+      beatAria:(n,label)=>`Uderzenie ${n}: ${label}. Kliknij, aby zmienić.`,
+      gameTitle:'Gra rytmiczna', gameTempo:'Tempo', gameMode:'Tryb', modeAdv:'Zaawansowany', modeBeg:'Początkujący',
+      gameSound:'Dźwięk metronomu',
+      gameSoundHint:'Przy dźwięku z głośnika mikrofon może wyłapać sam metronom — najlepiej użyj słuchawek.',
+      gameStart:'Start', gameStop:'Przerwij',
+      gameCalib:'Cisza… kalibracja mikrofonu', gameListen:'Słuchaj rytmu…', gameClap:'Klaszcz!',
+      gameClapAlong:'Klaszcz razem z pulsem!', gameNoClap:'Nie wykryto klaśnięcia', gameMicError:'Brak dostępu do mikrofonu',
+      trendFast:(x)=>`Przyspieszasz o ${x}%`, trendSlow:(x)=>`Zwalniasz o ${x}%`, trendEven:'Trzymasz równe tempo',
+      beginMsg:(even,ms)=>{
+        const a = ms===null ? 0 : Math.abs(Math.round(ms));
+        const off = ms!==null ? `ok. ${a} ms ${ms>0?'za późno':'za wcześnie'}` : '';
+        return even ? (off ? `Klaszczesz równo, ale ${off}` : 'Klaszczesz równo i równo z pulsem')
+                    : (off ? `Klaszczesz nierówno, średnio ${off}` : 'Klaszczesz nierówno'); },
+      chartAria:'Wykres: idealna siatka rytmu i Twoje klaśnięcia',
+      chartGrid:'siatka rytmu', chartPulses:'pulsy ekranu', chartClaps:'klaśnięcia',
+      nickLabel:'Twój nick', nickSave:'Zapisz wynik', nickSaved:'Zapisano!', boardNoQual:'Ten wynik nie łapie się do top 10',
+      boardTitle:(m,b)=>`Top 10 — ${m}, ${b} BPM`, boardEmpty:'Brak wyników', boardClear:'Wyczyść tablicę',
+      boardConfirm:'Usunąć wszystkie wyniki (wszystkie tryby i tempa)?', boardYes:'Tak, usuń', boardNo:'Anuluj',
+      playAgain:'Zagraj ponownie' },
     en: { title:'Metronome', beatsPerBar:'Beats/bar', clicks:'Clicks',
       beatAccent:'accent', beatMuted:'muted', beatNormal:'normal beat',
-      beatAria:(n,label)=>`Beat ${n}: ${label}. Click to change.` },
+      beatAria:(n,label)=>`Beat ${n}: ${label}. Click to change.`,
+      gameTitle:'Rhythm game', gameTempo:'Tempo', gameMode:'Mode', modeAdv:'Advanced', modeBeg:'Beginner',
+      gameSound:'Metronome sound',
+      gameSoundHint:'With speaker sound the microphone may pick up the metronome itself — headphones work best.',
+      gameStart:'Start', gameStop:'Stop',
+      gameCalib:'Quiet… calibrating microphone', gameListen:'Listen to the rhythm…', gameClap:'Clap!',
+      gameClapAlong:'Clap along with the pulse!', gameNoClap:'No clap detected', gameMicError:'No microphone access',
+      trendFast:(x)=>`You are speeding up by ${x}%`, trendSlow:(x)=>`You are slowing down by ${x}%`, trendEven:'You keep a steady tempo',
+      beginMsg:(even,ms)=>{
+        const a = ms===null ? 0 : Math.abs(Math.round(ms));
+        const off = ms!==null ? `about ${a} ms ${ms>0?'late':'early'}` : '';
+        return even ? (off ? `You clap steadily, but ${off}` : 'You clap steadily and in time with the pulse')
+                    : (off ? `Your clapping is uneven, on average ${off}` : 'Your clapping is uneven'); },
+      chartAria:'Chart: the ideal rhythm grid and your claps',
+      chartGrid:'rhythm grid', chartPulses:'screen pulses', chartClaps:'claps',
+      nickLabel:'Your nickname', nickSave:'Save score', nickSaved:'Saved!', boardNoQual:`This score doesn't make the top 10`,
+      boardTitle:(m,b)=>`Top 10 — ${m}, ${b} BPM`, boardEmpty:'No scores yet', boardClear:'Clear leaderboard',
+      boardConfirm:'Delete all scores (all modes and tempos)?', boardYes:'Yes, delete', boardNo:'Cancel',
+      playAgain:'Play again' },
     de: { title:'Metronom', beatsPerBar:'Schläge/Takt', clicks:'Klicks',
       beatAccent:'Akzent', beatMuted:'stumm', beatNormal:'normaler Schlag',
-      beatAria:(n,label)=>`Schlag ${n}: ${label}. Klicken zum Ändern.` },
+      beatAria:(n,label)=>`Schlag ${n}: ${label}. Klicken zum Ändern.`,
+      gameTitle:'Rhythmusspiel', gameTempo:'Tempo', gameMode:'Modus', modeAdv:'Fortgeschritten', modeBeg:'Anfänger',
+      gameSound:'Metronom-Ton',
+      gameSoundHint:'Über den Lautsprecher kann das Mikrofon das Metronom selbst aufnehmen – am besten Kopfhörer verwenden.',
+      gameStart:'Start', gameStop:'Abbrechen',
+      gameCalib:'Ruhe … Mikrofon wird kalibriert', gameListen:'Hör auf den Rhythmus …', gameClap:'Klatsch!',
+      gameClapAlong:'Klatsche im Takt des Pulses!', gameNoClap:'Kein Klatschen erkannt', gameMicError:'Kein Mikrofonzugriff',
+      trendFast:(x)=>`Du wirst um ${x} % schneller`, trendSlow:(x)=>`Du wirst um ${x} % langsamer`, trendEven:'Du hältst das Tempo stabil',
+      beginMsg:(even,ms)=>{
+        const a = ms===null ? 0 : Math.abs(Math.round(ms));
+        const off = ms!==null ? `ca. ${a} ms ${ms>0?'zu spät':'zu früh'}` : '';
+        return even ? (off ? `Du klatschst gleichmäßig, aber ${off}` : 'Du klatschst gleichmäßig und im Takt des Pulses')
+                    : (off ? `Du klatschst ungleichmäßig, im Schnitt ${off}` : 'Du klatschst ungleichmäßig'); },
+      chartAria:'Diagramm: das ideale Rhythmusraster und dein Klatschen',
+      chartGrid:'Rhythmusraster', chartPulses:'Bildschirm-Impulse', chartClaps:'Klatschen',
+      nickLabel:'Dein Spitzname', nickSave:'Ergebnis speichern', nickSaved:'Gespeichert!', boardNoQual:'Dieses Ergebnis reicht nicht für die Top 10',
+      boardTitle:(m,b)=>`Top 10 — ${m}, ${b} BPM`, boardEmpty:'Noch keine Ergebnisse', boardClear:'Bestenliste löschen',
+      boardConfirm:'Alle Ergebnisse löschen (alle Modi und Tempi)?', boardYes:'Ja, löschen', boardNo:'Abbrechen',
+      playAgain:'Nochmal spielen' },
     fr: { title:'Métronome', beatsPerBar:'Temps/mesure', clicks:'Clics',
       beatAccent:'accent', beatMuted:'muet', beatNormal:'temps normal',
-      beatAria:(n,label)=>`Temps ${n}\xa0: ${label}. Cliquez pour changer.` },
+      beatAria:(n,label)=>`Temps ${n}\xa0: ${label}. Cliquez pour changer.`,
+      gameTitle:'Jeu de rythme', gameTempo:'Tempo', gameMode:'Mode', modeAdv:'Avancé', modeBeg:'Débutant',
+      gameSound:'Son du métronome',
+      gameSoundHint:`Avec le haut-parleur, le micro peut capter le métronome lui-même — mieux vaut utiliser un casque.`,
+      gameStart:'Démarrer', gameStop:'Arrêter',
+      gameCalib:'Silence… calibrage du micro', gameListen:'Écoute le rythme…', gameClap:'Applaudis\xa0!',
+      gameClapAlong:'Applaudis avec la pulsation\xa0!', gameNoClap:'Aucun applaudissement détecté', gameMicError:`Pas d'accès au micro`,
+      trendFast:(x)=>`Tu accélères de ${x}\xa0%`, trendSlow:(x)=>`Tu ralentis de ${x}\xa0%`, trendEven:'Tu gardes un tempo régulier',
+      beginMsg:(even,ms)=>{
+        const a = ms===null ? 0 : Math.abs(Math.round(ms));
+        const off = ms!==null ? `environ ${a} ms ${ms>0?'trop tard':'trop tôt'}` : '';
+        return even ? (off ? `Tu applaudis régulièrement, mais ${off}` : 'Tu applaudis régulièrement, en rythme avec la pulsation')
+                    : (off ? `Tu applaudis de façon irrégulière, en moyenne ${off}` : 'Tu applaudis de façon irrégulière'); },
+      chartAria:'Graphique : la grille rythmique idéale et tes applaudissements',
+      chartGrid:'grille rythmique', chartPulses:`pulsations de l'écran`, chartClaps:'applaudissements',
+      nickLabel:'Ton pseudo', nickSave:'Enregistrer le score', nickSaved:'Enregistré\xa0!', boardNoQual:`Ce score n'entre pas dans le top 10`,
+      boardTitle:(m,b)=>`Top 10 — ${m}, ${b} BPM`, boardEmpty:'Pas encore de scores', boardClear:'Effacer le classement',
+      boardConfirm:'Supprimer tous les scores (tous modes et tempos)\xa0?', boardYes:'Oui, supprimer', boardNo:'Annuler',
+      playAgain:'Rejouer' },
     es: { title:'Metrónomo', beatsPerBar:'Pulsos/compás', clicks:'Clics',
       beatAccent:'acento', beatMuted:'silenciado', beatNormal:'pulso normal',
-      beatAria:(n,label)=>`Pulso ${n}: ${label}. Toca para cambiar.` },
+      beatAria:(n,label)=>`Pulso ${n}: ${label}. Toca para cambiar.`,
+      gameTitle:'Juego de ritmo', gameTempo:'Tempo', gameMode:'Modo', modeAdv:'Avanzado', modeBeg:'Principiante',
+      gameSound:'Sonido del metrónomo',
+      gameSoundHint:'Con el altavoz, el micrófono puede captar el propio metrónomo; es mejor usar auriculares.',
+      gameStart:'Iniciar', gameStop:'Detener',
+      gameCalib:'Silencio… calibrando el micrófono', gameListen:'Escucha el ritmo…', gameClap:'¡Aplaude!',
+      gameClapAlong:'¡Aplaude con el pulso!', gameNoClap:'No se detectó ninguna palmada', gameMicError:'Sin acceso al micrófono',
+      trendFast:(x)=>`Aceleras un ${x} %`, trendSlow:(x)=>`Frenas un ${x} %`, trendEven:'Mantienes un tempo constante',
+      beginMsg:(even,ms)=>{
+        const a = ms===null ? 0 : Math.abs(Math.round(ms));
+        const off = ms!==null ? `unos ${a} ms ${ms>0?'tarde':'pronto'}` : '';
+        return even ? (off ? `Aplaudes con regularidad, pero ${off}` : 'Aplaudes con regularidad y al ritmo del pulso')
+                    : (off ? `Aplaudes de forma irregular, de media ${off}` : 'Aplaudes de forma irregular'); },
+      chartAria:'Gráfico: la cuadrícula rítmica ideal y tus palmadas',
+      chartGrid:'cuadrícula rítmica', chartPulses:'pulsos de pantalla', chartClaps:'palmadas',
+      nickLabel:'Tu apodo', nickSave:'Guardar puntuación', nickSaved:'¡Guardado!', boardNoQual:'Esta puntuación no entra en el top 10',
+      boardTitle:(m,b)=>`Top 10 — ${m}, ${b} BPM`, boardEmpty:'Aún no hay puntuaciones', boardClear:'Borrar clasificación',
+      boardConfirm:'¿Borrar todas las puntuaciones (todos los modos y tempos)?', boardYes:'Sí, borrar', boardNo:'Cancelar',
+      playAgain:'Jugar de nuevo' },
     pt: { title:'Metrónomo', beatsPerBar:'Batidas/compasso', clicks:'Cliques',
       beatAccent:'acento', beatMuted:'silenciado', beatNormal:'batida normal',
-      beatAria:(n,label)=>`Batida ${n}: ${label}. Toque para alterar.` },
+      beatAria:(n,label)=>`Batida ${n}: ${label}. Toque para alterar.`,
+      gameTitle:'Jogo de ritmo', gameTempo:'Tempo', gameMode:'Modo', modeAdv:'Avançado', modeBeg:'Iniciante',
+      gameSound:'Som do metrónomo',
+      gameSoundHint:'Com o altifalante, o microfone pode captar o próprio metrónomo — o melhor é usar auscultadores.',
+      gameStart:'Iniciar', gameStop:'Parar',
+      gameCalib:'Silêncio… a calibrar o microfone', gameListen:'Ouve o ritmo…', gameClap:'Bate palmas!',
+      gameClapAlong:'Bate palmas com a pulsação!', gameNoClap:'Nenhuma palma detetada', gameMicError:'Sem acesso ao microfone',
+      trendFast:(x)=>`Estás a acelerar ${x}%`, trendSlow:(x)=>`Estás a abrandar ${x}%`, trendEven:'Manténs um tempo constante',
+      beginMsg:(even,ms)=>{
+        const a = ms===null ? 0 : Math.abs(Math.round(ms));
+        const off = ms!==null ? `cerca de ${a} ms ${ms>0?'tarde demais':'cedo demais'}` : '';
+        return even ? (off ? `Bates palmas de forma regular, mas ${off}` : 'Bates palmas de forma regular e ao ritmo da pulsação')
+                    : (off ? `Bates palmas de forma irregular, em média ${off}` : 'Bates palmas de forma irregular'); },
+      chartAria:'Gráfico: a grelha rítmica ideal e as tuas palmas',
+      chartGrid:'grelha rítmica', chartPulses:'pulsos do ecrã', chartClaps:'palmas',
+      nickLabel:'A tua alcunha', nickSave:'Guardar pontuação', nickSaved:'Guardado!', boardNoQual:'Esta pontuação não entra no top 10',
+      boardTitle:(m,b)=>`Top 10 — ${m}, ${b} BPM`, boardEmpty:'Ainda sem pontuações', boardClear:'Limpar tabela',
+      boardConfirm:'Apagar todas as pontuações (todos os modos e andamentos)?', boardYes:'Sim, apagar', boardNo:'Cancelar',
+      playAgain:'Jogar novamente' },
   };
   let currentLang = 'pl';
   try{ const l = localStorage.getItem('appLangV1'); if(['pl','en','de','fr','es','pt'].includes(l)) currentLang = l; }catch(e){}
@@ -268,6 +512,7 @@
       if(typeof v === 'string') el.textContent = v;
     });
     renderBeatDots();
+    refreshGameTexts();
   }
 
   /* ---------- Theme system (shared with Postawa / Tuner) ---------- */
@@ -285,6 +530,10 @@
   ];
   const THEME_KEY = 'postawaThemeV1'; // shared across app modules on purpose
 
+  function isLightColor(hex){
+    const n = parseInt(hex.slice(1),16);
+    return (0.299*(n>>16&255) + 0.587*(n>>8&255) + 0.114*(n&255)) > 160;
+  }
   function applyTheme(theme){
     const r = document.documentElement.style;
     r.setProperty('--panel', theme.panel);
@@ -297,6 +546,7 @@
     r.setProperty('--active-text', theme.activeText);
     r.setProperty('--dot-normal', theme.dotNormal);
     r.setProperty('--dot-accent', theme.dotAccent);
+    r.setProperty('--pend-line', isLightColor(theme.panel) ? theme.ink : '#FFFFFF');
     document.body.style.background = theme.bg;
     try{ localStorage.setItem(THEME_KEY, theme.id); }catch(e){}
     document.querySelectorAll('.theme-swatch').forEach(el=>el.classList.toggle('active', el.dataset.id===theme.id));
@@ -459,22 +709,27 @@
     }, Math.max(60, (60000/bpm)*0.35));
   }
 
-  /* ---------- Pendulum (real-metronome-style swinging dot, one beat = one swing) ---------- */
-  const PENDULUM_LEFT = '3%';
-  const PENDULUM_RIGHT = '97%';
-  let pendulumSide = 0; // 0 = left, 1 = right
+  /* ---------- Pendulum: ball flies along a thick line and bounces off a wall at each end ---------- */
+  function restartAnim(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+  function makePend(track){
+    const dot = track.querySelector('.pendulum-dot');
+    const wl = track.querySelector('.pend-wall.left');
+    const wr = track.querySelector('.pend-wall.right');
+    return {
+      setX(x){ dot.style.setProperty('--x', x.toFixed(4)); },   // 0 = touching left wall, 1 = touching right wall
+      show(v){ dot.style.opacity = v ? '1' : '0'; },
+      hit(side){ restartAnim(side===0 ? wl : wr, 'hit'); }
+    };
+  }
+  const mainPend = makePend(mainTrack);
+  let beatSeq = 0;       // running number of the main beats scheduled since start (even = left wall, odd = right wall)
+  let pendPrev = null;   // last main beat that has already "happened": {time, seq}
   function resetPendulum(){
-    pendulumSide = 0;
-    pendulumDot.style.transitionDuration = '0.25s';
-    pendulumDot.style.left = PENDULUM_LEFT;
+    pendPrev = null;
+    mainPend.setX(0);
+    mainPend.show(true);
   }
   resetPendulum();
-  function swingPendulum(){
-    const secondsPerBeat = 60.0/bpm;
-    pendulumDot.style.transitionDuration = secondsPerBeat + 's';
-    pendulumSide = pendulumSide===0 ? 1 : 0;
-    pendulumDot.style.left = pendulumSide===0 ? PENDULUM_LEFT : PENDULUM_RIGHT;
-  }
 
   /* ---------- Screen wake lock: keep the phone screen on while this page is open ---------- */
   let wakeLock = null;
@@ -510,6 +765,11 @@
     return audioCtx;
   }
 
+  // delay between scheduling a sound and hearing it (0 if the browser does not report it)
+  function outLat(){
+    return (audioCtx && typeof audioCtx.outputLatency==='number' && isFinite(audioCtx.outputLatency)) ? audioCtx.outputLatency : 0;
+  }
+
   function totalTicks(){ return beatsPerBar*subdivision; }
 
   function scheduleClick(tick, time){
@@ -530,7 +790,7 @@
       osc.start(time);
       osc.stop(time+0.06);
     }
-    notesInQueue.push({ tick, time });
+    notesInQueue.push({ tick, time, main:isMainBeat, seq:isMainBeat ? beatSeq++ : -1 });
   }
 
   function advanceNote(){
@@ -549,14 +809,23 @@
 
   function drawLoop(){
     if(!playing) return;
-    const currentTime = audioCtx.currentTime;
-    while(notesInQueue.length && notesInQueue[0].time < currentTime){
+    // visual time = what is being heard right now (audio clock minus output latency)
+    const t = audioCtx.currentTime - outLat();
+    while(notesInQueue.length && notesInQueue[0].time <= t){
       const note = notesInQueue.shift();
-      if(note.tick % subdivision === 0){
+      if(note.main){
         const beatIndex = Math.floor(note.tick/subdivision) % beatsPerBar;
         lightBeat(beatIndex);
-        swingPendulum();
+        mainPend.hit(note.seq % 2);
+        pendPrev = { time: note.time, seq: note.seq };
       }
+    }
+    if(pendPrev){
+      // the ball reaches the opposite wall exactly at the next main beat
+      let nextT = pendPrev.time + 60.0/bpm;
+      for(const n of notesInQueue){ if(n.main){ nextT = n.time; break; } }
+      const frac = Math.min(1, Math.max(0, (t - pendPrev.time) / (nextT - pendPrev.time)));
+      mainPend.setX(pendPrev.seq % 2 === 0 ? frac : 1 - frac);
     }
     requestAnimationFrame(drawLoop);
   }
@@ -566,6 +835,8 @@
     playing = true;
     currentTick = 0;
     notesInQueue = [];
+    beatSeq = 0;
+    resetPendulum();
     nextNoteTime = audioCtx.currentTime + 0.05;
     playBtn.textContent = '■';
     playBtn.classList.add('playing');
@@ -582,8 +853,613 @@
     resetPendulum();
   }
   playBtn.addEventListener('click', ()=>{
-    if(playing) stopMetronome(); else startMetronome();
+    if(playing) stopMetronome();
+    else { abortGame(); startMetronome(); }   // never run the game and the metronome at the same time
   });
+
+  /* ---------- Rhythm game: clap in time ---------- */
+  const gameTempoSelect = document.getElementById('gameTempoSelect');
+  const gameModeSelect = document.getElementById('gameModeSelect');
+  const gameSoundBox = document.getElementById('gameSoundBox');
+  const gameSoundChk = document.getElementById('gameSoundChk');
+  const gameStartBtn = document.getElementById('gameStartBtn');
+  const gameAbortBtn = document.getElementById('gameAbortBtn');
+  const gameMsg = document.getElementById('gameMsg');
+  const gameSetup = document.getElementById('gameSetup');
+  const gameStage = document.getElementById('gameStage');
+  const gameResult = document.getElementById('gameResult');
+  const gameStatus = document.getElementById('gameStatus');
+  const gameCounter = document.getElementById('gameCounter');
+  const resultScore = document.getElementById('resultScore');
+  const resultText = document.getElementById('resultText');
+  const resultChart = document.getElementById('resultChart');
+  const chartLegend = document.getElementById('chartLegend');
+  const nickBox = document.getElementById('nickBox');
+  const nickInput = document.getElementById('nickInput');
+  const nickSaveBtn = document.getElementById('nickSaveBtn');
+  const nickNote = document.getElementById('nickNote');
+  const playAgainBtn = document.getElementById('playAgainBtn');
+  const boardTitle = document.getElementById('boardTitle');
+  const boardList = document.getElementById('boardList');
+  const boardClearBtn = document.getElementById('boardClearBtn');
+  const boardConfirm = document.getElementById('boardConfirm');
+  const boardYesBtn = document.getElementById('boardYesBtn');
+  const boardNoBtn = document.getElementById('boardNoBtn');
+  const pulseOverlay = document.getElementById('pulseOverlay');
+  const gamePend = makePend(document.getElementById('gameTrack'));
+
+  /* All tunable values live here - to be tuned after tests on a real phone. */
+  const GAME_CFG = {
+    TEMPO_MIN:50, TEMPO_MAX:160, TEMPO_STEP:10, // 12 levels
+    WARM:8,            // warm-up beats (heard / seen by the student)
+    SCORED:10,         // scored claps (advanced) / scored pulses (beginner)
+    CAL_SEC:1.0,       // microphone calibration: listening to silence
+    LEAD_SEC:0.8,      // pause between calibration and the first beat
+    // clap detector
+    RMS_WIN:96,        // samples in the RMS window (~2 ms)
+    THR_MULT:3.0,      // threshold = ambient noise peak x THR_MULT ...
+    THR_MIN:0.04, THR_MAX:0.5, // ... clamped to this range (RMS, full scale = 1)
+    REARM:0.7,         // level must drop below threshold x REARM before the next clap can count
+    LOCK_FRAC:0.4, LOCK_MIN:0.12, LOCK_MAX:0.22, // lock-out after a clap = fraction of the beat, clamped (seconds)
+    // scoring (fractions of one beat)
+    INT_FULL:0.04, INT_ZERO:0.20,       // intervals between claps: 100% up to +-4%, 0% at +-20%
+    FIRST_FULL:0.085, FIRST_ZERO:0.30,  // first interval (speaker + microphone delay): 100% up to +-8.5%, 0% at +-30%
+    TIMEOUT_MULT:1.5,  // advanced: stop waiting after 1.5 x the expected time of the 10 claps
+    TREND_EVEN:0.015,  // |mean deviation| below this = "steady tempo"
+    EVEN_SCORE:60,     // beginner: score at/above this = "you clap evenly"
+    OFFSET_NOTE_MS:30, // beginner: mention the average shift only if it is at least this big
+    GOOD:75, OK:35,    // chart line colours: score >= GOOD green, >= OK yellow, else red
+    NICK_MAX:12, TOP_N:10
+  };
+
+  /* PURE-START (no DOM, no audio - covered by node tests) */
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function mean(a){ return a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0; }
+  function devScore(dev, full, zero){
+    const a = Math.abs(dev);
+    if(a <= full) return 100;
+    if(a >= zero) return 0;
+    return 100*(zero-a)/(zero-full);
+  }
+  // Advanced: 10 intervals. The 1st is measured from the (heard) 8th beat T7h to the 1st clap,
+  // the next 9 between consecutive claps. Each is compared with the beat length P.
+  function scoreAdvanced(P, T7h, claps, cfg){
+    const items = [];
+    for(let k=0;k<cfg.SCORED;k++){
+      if(k < claps.length){
+        const prev = k===0 ? T7h : claps[k-1];
+        const dev = (claps[k]-prev-P)/P;
+        const score = k===0 ? devScore(dev, cfg.FIRST_FULL, cfg.FIRST_ZERO) : devScore(dev, cfg.INT_FULL, cfg.INT_ZERO);
+        items.push({dev, score});
+      } else {
+        items.push({dev:null, score:0});   // missing clap = 0%
+      }
+    }
+    const total = Math.round(mean(items.map(i=>i.score)));
+    const devs = items.slice(1).filter(i=>i.dev!==null).map(i=>i.dev);   // tendency: intervals between claps only
+    return { total, items, trend: devs.length ? mean(devs) : null };
+  }
+  // Beginner: pair each scored pulse with the nearest unused clap (within +-50% of the beat),
+  // subtract the average shift and judge the evenness of what is left.
+  function scoreBeginner(P, pulses, claps, cfg){
+    const used = new Set();
+    const matches = [];
+    for(let j=cfg.WARM; j<cfg.WARM+cfg.SCORED && j<pulses.length; j++){
+      let best=-1, bd=Infinity;
+      for(let c=0;c<claps.length;c++){
+        if(used.has(c)) continue;
+        const d = Math.abs(claps[c]-pulses[j]);
+        if(d < bd){ bd=d; best=c; }
+      }
+      if(best>=0 && bd <= 0.5*P){ used.add(best); matches.push({j, ci:best, off:claps[best]-pulses[j]}); }
+      else matches.push({j, ci:-1, off:null});
+    }
+    const offs = matches.filter(m=>m.ci>=0).map(m=>m.off);
+    const shift = mean(offs);
+    const pairs = [];
+    const scores = matches.map(m=>{
+      if(m.ci < 0) return 0;
+      const s = devScore((m.off-shift)/P, cfg.INT_FULL, cfg.INT_ZERO);
+      pairs.push({gi:m.j, ci:m.ci, score:s});
+      return s;
+    });
+    return { total: Math.round(mean(scores)), shift, pairs, matched: offs.length };
+  }
+  // Emoji shown next to the final percentage ('trophy' = the trophy image)
+  function emojiForScore(sc){
+    if(sc >= 96) return 'trophy';
+    if(sc >= 90) return '\u{1F604}';       // 😄
+    if(sc >= 85) return '\u{1F600}';       // 😀
+    if(sc >= 80) return '\u{1F60A}';       // 😊
+    if(sc >= 75) return '\u{1F642}';       // 🙂
+    if(sc >= 70) return '\u{1F610}';       // 😐
+    if(sc >= 64) return '\u{1F612}';       // 😒
+    if(sc >= 55) return '\u2639\uFE0F';   // ☹️
+    return '\u{1F635}';                    // 😵
+  }
+  /* PURE-END */
+
+  /* ----- persistent state (all storage access in try/catch) ----- */
+  const TROPHY_SRC = 'data:image/png;base64,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';
+  const GAME_KEY = 'metronomeGameSettingsV1';
+  const BOARD_KEY = 'metronomeGameBoardV1';
+  const NICK_KEY = 'metronomeGameNickV1';
+  function loadJSON(key){ try{ return JSON.parse(localStorage.getItem(key)); }catch(e){ return null; } }
+  function saveJSON(key, v){ try{ localStorage.setItem(key, JSON.stringify(v)); }catch(e){} }
+
+  function cleanNick(v){
+    const s = String(v||'').replace(/\s+/g,' ').trim();
+    return Array.from(s).slice(0, GAME_CFG.NICK_MAX).join('').trim();
+  }
+  function boardKey(mode, tempo){ return mode+'-'+tempo; }
+  function getList(mode, tempo){
+    const o = loadJSON(BOARD_KEY);
+    const l = o && typeof o==='object' ? o[boardKey(mode,tempo)] : null;
+    if(!Array.isArray(l)) return [];
+    return l.filter(e=> e && typeof e.n==='string' && Number.isFinite(e.s))
+            .map(e=>({n:cleanNick(e.n), s:e.s, d:Number.isFinite(e.d)?e.d:0}))
+            .slice(0, GAME_CFG.TOP_N);
+  }
+  function qualifies(mode, tempo, score){
+    if(!(score > 0)) return false;
+    const l = getList(mode, tempo);
+    return l.length < GAME_CFG.TOP_N || score > l[l.length-1].s;
+  }
+  function addScore(mode, tempo, entry){
+    const o = loadJSON(BOARD_KEY);
+    const all = (o && typeof o==='object') ? o : {};
+    const l = getList(mode, tempo);
+    l.push(entry);
+    l.sort((a,b)=> b.s - a.s || a.d - b.d);
+    all[boardKey(mode,tempo)] = l.slice(0, GAME_CFG.TOP_N);
+    saveJSON(BOARD_KEY, all);
+  }
+
+  /* ----- game state ----- */
+  const game = {
+    running:false, phase:'idle',            // idle | calib | play | ended | result
+    mode:'beg', tempo:80, P:0.75, sound:false,
+    T0:0, H:0, T7h:0, nextBeat:0, pulseTimes:[], claps:[], ballHidden:false,
+    windowEnd:0, deadline:0, endAt:0,
+    raf:0, stream:null, src:null, analyser:null, bus:null, calStart:0,
+    statusKey:'', msgKey:'', noteKey:'', result:null, savedThisRound:false, lastSavedD:0
+  };
+  // clap detector state
+  const det = {
+    buf:null, ring:new Float32Array(GAME_CFG.RMS_WIN), wi:0, sumSq:0, last:0, sr:44100,
+    mode:'off', thr:0.1, lock:0.15, armed:false, lastOnset:-1, listenFrom:Infinity, calMax:[]
+  };
+
+  function beatT(k){ return game.T0 + k*game.P; }
+  function visLat(){ return (game.mode==='adv' || game.sound) ? outLat() : 0; }
+  function setStatus(key){ game.statusKey = key; gameStatus.textContent = key ? tr()[key] : ''; }
+  // warm-up digits count down 8..1 (normal colour); test digits count up 1..10 (red)
+  function setCounter(v, test){
+    gameCounter.textContent = v==='' ? '' : String(v);
+    gameCounter.classList.toggle('test', !!test);
+  }
+  function setMsg(key){ game.msgKey = key; gameMsg.textContent = key ? tr()[key] : ''; }
+  function setNote(key){ game.noteKey = key; nickNote.textContent = key ? tr()[key] : ''; }
+  function showGameView(v){
+    gameSetup.hidden = v!=='setup';
+    gameStage.hidden = v!=='stage';
+    gameResult.hidden = v!=='result';
+  }
+
+  /* ----- clap detector: sample-accurate onset time from the analyser buffer ----- */
+  function detReset(){
+    det.ring.fill(0); det.wi=0; det.sumSq=0; det.mode='off'; det.armed=false; det.lastOnset=-1;
+    det.listenFrom=Infinity; det.calMax=[];
+  }
+  function detFeed(now){
+    if(!game.analyser) return;
+    const N = game.analyser.fftSize;
+    if(!det.buf || det.buf.length!==N) det.buf = new Float32Array(N);
+    game.analyser.getFloatTimeDomainData(det.buf);
+    let n = Math.round((now - det.last)*det.sr);
+    det.last = now;
+    if(n <= 0) return;
+    if(n > N) n = N;
+    let frameMax = 0;
+    const W = GAME_CFG.RMS_WIN;
+    for(let i=N-n; i<N; i++){
+      const x = det.buf[i];
+      const old = det.ring[det.wi];
+      det.sumSq += x*x - old*old;
+      det.ring[det.wi] = x;
+      det.wi = (det.wi+1) % W;
+      const rms = Math.sqrt(Math.max(det.sumSq,0)/W);
+      if(det.mode==='calib'){ if(rms > frameMax) frameMax = rms; continue; }
+      if(det.mode!=='listen') continue;
+      const t = now - (N-1-i)/det.sr;      // time of this sample on the audio clock
+      if(t < det.listenFrom) continue;
+      if(!det.armed){
+        if(rms < det.thr*GAME_CFG.REARM && t - det.lastOnset >= det.lock) det.armed = true;
+      } else if(rms > det.thr){
+        det.armed = false;
+        det.lastOnset = t;
+        onClap(t);
+      }
+    }
+    if(det.mode==='calib') det.calMax.push(frameMax);
+  }
+  function onClap(t){
+    if(game.phase!=='play') return;
+    if(game.mode==='adv'){
+      if(game.claps.length >= GAME_CFG.SCORED) return;
+      game.claps.push(t);
+      setCounter(game.claps.length, true);   // 1, 2, ... 10 (red)
+    } else {
+      game.claps.push(t);
+    }
+  }
+
+  /* ----- round ----- */
+  function gameClick(time, accent){
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = accent ? 1500 : 1000;
+    const peak = accent ? 0.9 : 0.6;
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.linearRampToValueAtTime(peak, time+0.002);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time+0.05);
+    osc.connect(gain).connect(game.bus);
+    osc.start(time);
+    osc.stop(time+0.06);
+  }
+  function teardownMic(){
+    try{ if(game.src) game.src.disconnect(); }catch(e){}
+    try{ if(game.stream) game.stream.getTracks().forEach(t=>t.stop()); }catch(e){}
+    game.src = null; game.stream = null; game.analyser = null;
+  }
+  function silenceBus(){
+    try{ if(game.bus){ game.bus.gain.setValueAtTime(0, audioCtx.currentTime); game.bus.disconnect(); } }catch(e){}
+    game.bus = null;
+  }
+
+  async function startGame(){
+    if(game.running) return;
+    if(playing) stopMetronome();
+    game.mode = gameModeSelect.value==='adv' ? 'adv' : 'beg';
+    game.tempo = parseInt(gameTempoSelect.value,10);
+    game.sound = game.mode==='beg' ? gameSoundChk.checked : true;
+    game.P = 60/game.tempo;
+    game.result = null; game.savedThisRound = false;
+    saveGameSettings();
+    setMsg(''); setNote('');
+    ensureAudioCtx();
+    try{ await audioCtx.resume(); }catch(e){}
+    game.running = true; game.phase = 'calib';
+    showGameView('stage');
+    setStatus('gameCalib'); setCounter('');
+    gamePend.setX(0); gamePend.show(true);
+    let stream = null;
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+    }catch(e){
+      if(game.running){ abortGame(); setMsg('gameMicError'); }
+      return;
+    }
+    if(!game.running){ stream.getTracks().forEach(t=>t.stop()); return; }   // aborted while the permission dialog was open
+    game.stream = stream;
+    game.src = audioCtx.createMediaStreamSource(stream);
+    game.analyser = audioCtx.createAnalyser();
+    game.analyser.fftSize = 4096;
+    game.analyser.smoothingTimeConstant = 0;
+    game.src.connect(game.analyser);
+    detReset();
+    det.sr = audioCtx.sampleRate;
+    det.last = audioCtx.currentTime;
+    det.mode = 'calib';
+    game.calStart = audioCtx.currentTime;
+    game.raf = requestAnimationFrame(gameFrame);
+  }
+
+  function finishCalibration(now){
+    const arr = det.calMax.slice(3).sort((a,b)=>b-a);          // skip start-up frames, ignore one stray peak
+    const noise = arr.length ? arr[Math.min(1, arr.length-1)] : 0;
+    det.thr = clamp(noise*GAME_CFG.THR_MULT, GAME_CFG.THR_MIN, GAME_CFG.THR_MAX);
+    det.lock = clamp(GAME_CFG.LOCK_FRAC*game.P, GAME_CFG.LOCK_MIN, GAME_CFG.LOCK_MAX);
+    det.armed = false; det.lastOnset = -1;
+    const adv = game.mode==='adv', P = game.P;
+    game.bus = audioCtx.createGain();
+    game.bus.connect(audioCtx.destination);
+    game.T0 = now + GAME_CFG.LEAD_SEC;
+    game.H = (adv || game.sound) ? outLat() : 0;       // delay between scheduling a click and hearing it
+    game.nextBeat = 0; game.claps = []; game.pulseTimes = []; game.ballHidden = false;
+    if(adv){
+      for(let k=0;k<GAME_CFG.WARM;k++) gameClick(beatT(k), k===0);
+      game.T7h = beatT(GAME_CFG.WARM-1) + game.H;                          // heard 8th beat
+      det.listenFrom = beatT(GAME_CFG.WARM) + game.H - 0.5*P;               // half a beat before the expected 9th beat
+      game.windowEnd = beatT(GAME_CFG.WARM) + game.H + 0.5*P;               // 1st clap accepted within +-50% of the beat
+      game.deadline = game.T7h + GAME_CFG.TIMEOUT_MULT*GAME_CFG.SCORED*P;
+      setStatus('gameListen');
+    } else {
+      const total = GAME_CFG.WARM + GAME_CFG.SCORED;
+      if(game.sound) for(let k=0;k<total;k++) gameClick(beatT(k), k===0);
+      det.listenFrom = beatT(0) - 0.5*P;                                    // microphone listens the whole round
+      game.endAt = beatT(total-1) + 0.5*P;
+      setStatus('gameClapAlong');
+    }
+    det.mode = 'listen';
+    game.phase = 'play';
+  }
+
+  function playFrame(now){
+    const adv = game.mode==='adv', P = game.P;
+    const vis = now - visLat();                                              // what is being heard / seen right now
+    const total = adv ? GAME_CFG.WARM : GAME_CFG.WARM + GAME_CFG.SCORED;
+    while(game.nextBeat < total && vis >= beatT(game.nextBeat)){
+      const k = game.nextBeat++;
+      if(k < GAME_CFG.WARM) setCounter(GAME_CFG.WARM - k, false);   // 8 ... 1
+      else setCounter(k - GAME_CFG.WARM + 1, true);                 // beginner test pulses: 1 ... 10 (red)
+      gamePend.hit(k%2);
+      if(adv){ if(k===total-1) setStatus('gameClap'); }
+      else { game.pulseTimes.push(now); restartAnim(pulseOverlay, 'go'); }   // the real moment of the screen pulse
+    }
+    const prev = game.nextBeat - 1;
+    if(prev < 0){
+      gamePend.setX(0);
+    } else if(prev >= total-1){
+      gamePend.setX((total-1)%2===0 ? 0 : 1);
+      if(adv && !game.ballHidden){ gamePend.show(false); game.ballHidden = true; }   // silence: the ball must not hint the rhythm
+    } else {
+      const frac = clamp((vis - beatT(prev))/P, 0, 1);
+      gamePend.setX(prev%2===0 ? frac : 1-frac);
+    }
+    if(adv){
+      if(game.claps.length >= GAME_CFG.SCORED || now > game.deadline || (game.claps.length===0 && now > game.windowEnd)) endRound();
+    } else if(now > game.endAt){
+      endRound();
+    }
+  }
+
+  function gameFrame(){
+    if(!game.running) return;
+    const now = audioCtx.currentTime;
+    detFeed(now);
+    if(game.phase==='calib'){
+      if(now - game.calStart >= GAME_CFG.CAL_SEC) finishCalibration(now);
+    } else if(game.phase==='play'){
+      playFrame(now);
+    }
+    if(game.running) game.raf = requestAnimationFrame(gameFrame);
+  }
+
+  function endRound(){
+    if(!game.running) return;
+    game.running = false;
+    game.phase = 'ended';
+    cancelAnimationFrame(game.raf);
+    teardownMic();
+    silenceBus();
+    setStatus('');
+    setTimeout(showResult, 450);       // let the last counter value be seen
+  }
+  function abortGame(){
+    if(!game.running && game.phase!=='ended') return;
+    game.running = false;
+    game.phase = 'idle';
+    cancelAnimationFrame(game.raf);
+    teardownMic();
+    silenceBus();
+    setStatus(''); setCounter('');
+    gamePend.setX(0); gamePend.show(true);
+    showGameView('setup');
+  }
+
+  /* ----- result ----- */
+  function showResult(){
+    if(game.phase!=='ended') return;
+    const P = game.P, adv = game.mode==='adv';
+    let res;
+    if(adv){
+      if(!game.claps.length){
+        res = { mode:'adv', noClap:true };
+      } else {
+        const s = scoreAdvanced(P, game.T7h, game.claps, GAME_CFG);
+        const grid = [];                       // only the 10 test marks (the warm-up is not shown)
+        for(let k=0;k<GAME_CFG.SCORED;k++) grid.push({ t:beatT(GAME_CFG.WARM+k)+game.H });
+        const pairs = [];
+        s.items.forEach((it,k)=>{ if(it.dev!==null) pairs.push({ gi:k, ci:k, score:it.score }); });
+        res = { mode:'adv', noClap:false, score:s.total, trend:s.trend,
+                chart:{ grid, claps:game.claps.slice(), pairs, topKey:'chartGrid' } };
+      }
+    } else {
+      // beginner: only claps from the test part (from half a beat before the 9th pulse) are shown
+      const cut = game.pulseTimes[GAME_CFG.WARM] - 0.5*P;
+      const map = {}, claps = [];
+      game.claps.forEach((t,i)=>{ if(t >= cut){ map[i] = claps.length; claps.push(t); } });
+      if(!claps.length){
+        res = { mode:'beg', noClap:true };
+      } else {
+        const s = scoreBeginner(P, game.pulseTimes, game.claps, GAME_CFG);
+        const grid = game.pulseTimes.slice(GAME_CFG.WARM).map(t=>({ t }));
+        const pairs = s.pairs.filter(p=>map[p.ci]!==undefined).map(p=>({ gi:p.gi-GAME_CFG.WARM, ci:map[p.ci], score:p.score }));
+        res = { mode:'beg', noClap:false, score:s.total, shiftMs:s.shift*1000, matched:s.matched,
+                chart:{ grid, claps, pairs, topKey:'chartPulses' } };
+      }
+    }
+    game.result = res;
+    game.phase = 'result';
+    showGameView('result');
+    renderResult();
+    setupNick(res);
+  }
+
+  function pairColor(score){
+    return score >= GAME_CFG.GOOD ? 'var(--ok)' : (score >= GAME_CFG.OK ? 'var(--warn)' : 'var(--bad)');
+  }
+  function chartSVG(c){
+    const W=520, H=150, pad=14, yTop=36, yBot=114;
+    const all = c.grid.map(g=>g.t).concat(c.claps);
+    const t0 = Math.min.apply(null, all), t1 = Math.max.apply(null, all);
+    const span = Math.max(t1-t0, 0.001);
+    const X = t => (pad + (t-t0)/span*(W-2*pad)).toFixed(1);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${tr().chartAria}">`;
+    s += `<line x1="${pad}" x2="${W-pad}" y1="${yTop}" y2="${yTop}" style="stroke:var(--panel-2);stroke-width:2"/>`;
+    s += `<line x1="${pad}" x2="${W-pad}" y1="${yBot}" y2="${yBot}" style="stroke:var(--panel-2);stroke-width:2"/>`;
+    c.pairs.forEach(p=>{
+      s += `<line x1="${X(c.grid[p.gi].t)}" y1="${yTop+13}" x2="${X(c.claps[p.ci])}" y2="${yBot-8}" style="stroke:${pairColor(p.score)};stroke-width:1.6;opacity:.9"/>`;
+    });
+    c.grid.forEach(g=>{
+      s += `<rect x="${(X(g.t)-2.5).toFixed(1)}" y="${yTop-12}" width="5" height="24" rx="1" style="fill:var(--gold)"/>`;
+    });
+    c.claps.forEach(t=>{ s += `<circle cx="${X(t)}" cy="${yBot}" r="6" style="fill:var(--ink)"/>`; });
+    return s + '</svg>';
+  }
+  function legendItem(cls, text){
+    const span = document.createElement('span'); span.className = 'lg';
+    const i = document.createElement('i'); i.className = cls;
+    span.appendChild(i); span.appendChild(document.createTextNode(text));
+    return span;
+  }
+  function renderResult(){
+    const r = game.result;
+    if(!r) return;
+    resultScore.hidden = r.noClap;
+    resultScore.textContent = '';
+    if(!r.noClap){
+      const pct = document.createElement('span');
+      pct.textContent = r.score + '%';
+      resultScore.appendChild(pct);
+      const e = emojiForScore(r.score);
+      if(e==='trophy'){
+        const img = document.createElement('img');
+        img.className = 'result-trophy'; img.src = TROPHY_SRC; img.alt = ''; img.setAttribute('aria-hidden','true');
+        resultScore.appendChild(img);
+      } else {
+        const em = document.createElement('span');
+        em.className = 'result-emoji'; em.textContent = e; em.setAttribute('aria-hidden','true');
+        resultScore.appendChild(em);
+      }
+    }
+    let txt = '';
+    if(r.noClap){
+      txt = tr().gameNoClap;
+    } else if(r.mode==='adv'){
+      if(r.trend !== null){
+        const x = Math.round(Math.abs(r.trend)*100);
+        if(Math.abs(r.trend) < GAME_CFG.TREND_EVEN || x===0) txt = tr().trendEven;
+        else txt = r.trend < 0 ? tr().trendFast(x) : tr().trendSlow(x);   // shorter intervals = speeding up
+      }
+    } else {
+      const note = Math.abs(r.shiftMs) >= GAME_CFG.OFFSET_NOTE_MS ? r.shiftMs : null;   // + = late
+      txt = tr().beginMsg(r.score >= GAME_CFG.EVEN_SCORE, note);
+    }
+    resultText.textContent = txt;
+    resultChart.hidden = r.noClap;
+    chartLegend.hidden = r.noClap;
+    resultChart.innerHTML = '';
+    chartLegend.innerHTML = '';
+    if(!r.noClap){
+      resultChart.innerHTML = chartSVG(r.chart);
+      chartLegend.appendChild(legendItem('t-grid', tr()[r.chart.topKey]));
+      chartLegend.appendChild(legendItem('t-clap', tr().chartClaps));
+    }
+  }
+
+  /* ----- nick + leaderboard ----- */
+  function updateNickBtn(){ nickSaveBtn.disabled = !cleanNick(nickInput.value) || game.savedThisRound; }
+  function setupNick(res){
+    nickBox.hidden = true;
+    setNote('');
+    if(res.noClap || !(res.score > 0)) return;
+    if(qualifies(res.mode, game.tempo, res.score)){
+      let nick = '';
+      try{ nick = cleanNick(localStorage.getItem(NICK_KEY)); }catch(e){}
+      nickInput.value = nick;
+      nickBox.hidden = false;
+      updateNickBtn();
+    } else {
+      setNote('boardNoQual');
+    }
+  }
+  nickInput.addEventListener('input', updateNickBtn);
+  nickSaveBtn.addEventListener('click', ()=>{
+    const r = game.result;
+    const nick = cleanNick(nickInput.value);
+    if(!r || r.noClap || !nick || game.savedThisRound) return;
+    game.savedThisRound = true;
+    try{ localStorage.setItem(NICK_KEY, nick); }catch(e){}
+    const d = Date.now();
+    addScore(r.mode, game.tempo, { n:nick, s:r.score, d });
+    game.lastSavedD = d;
+    nickBox.hidden = true;
+    setNote('nickSaved');
+    renderBoard();
+  });
+
+  function renderBoard(){
+    const mode = gameModeSelect.value==='adv' ? 'adv' : 'beg';
+    const tempo = parseInt(gameTempoSelect.value,10);
+    boardTitle.textContent = tr().boardTitle(mode==='adv' ? tr().modeAdv : tr().modeBeg, tempo);
+    const list = getList(mode, tempo);
+    boardList.innerHTML = '';
+    if(!list.length){
+      const e = document.createElement('div'); e.className = 'board-empty'; e.textContent = tr().boardEmpty;
+      boardList.appendChild(e);
+      return;
+    }
+    list.forEach((e,i)=>{
+      const row = document.createElement('div');
+      row.className = 'board-row' + (e.d && e.d===game.lastSavedD ? ' me' : '');
+      const rank = document.createElement('span'); rank.className = 'board-rank'; rank.textContent = (i+1)+'.';
+      const nick = document.createElement('span'); nick.className = 'board-nick'; nick.textContent = e.n;   // textContent: nick is never parsed as HTML
+      const sc = document.createElement('span'); sc.className = 'board-score'; sc.textContent = e.s + '%';
+      row.appendChild(rank); row.appendChild(nick); row.appendChild(sc);
+      boardList.appendChild(row);
+    });
+  }
+  boardClearBtn.addEventListener('click', ()=>{ boardClearBtn.hidden = true; boardConfirm.hidden = false; });
+  boardNoBtn.addEventListener('click', ()=>{ boardConfirm.hidden = true; boardClearBtn.hidden = false; });
+  boardYesBtn.addEventListener('click', ()=>{
+    try{ localStorage.removeItem(BOARD_KEY); }catch(e){}
+    game.lastSavedD = 0;
+    boardConfirm.hidden = true; boardClearBtn.hidden = false;
+    renderBoard();
+  });
+
+  /* ----- setup controls ----- */
+  function saveGameSettings(){
+    saveJSON(GAME_KEY, { tempo:parseInt(gameTempoSelect.value,10), mode:gameModeSelect.value, sound:gameSoundChk.checked });
+  }
+  for(let b=GAME_CFG.TEMPO_MIN; b<=GAME_CFG.TEMPO_MAX; b+=GAME_CFG.TEMPO_STEP){
+    const opt = document.createElement('option');
+    opt.value = b; opt.textContent = b + ' BPM';
+    gameTempoSelect.appendChild(opt);
+  }
+  (function loadGameSettings(){
+    const s = loadJSON(GAME_KEY);
+    gameTempoSelect.value = '80';
+    gameModeSelect.value = 'beg';
+    if(s && typeof s==='object'){
+      if(s.tempo>=GAME_CFG.TEMPO_MIN && s.tempo<=GAME_CFG.TEMPO_MAX && s.tempo%GAME_CFG.TEMPO_STEP===0) gameTempoSelect.value = String(s.tempo);
+      if(s.mode==='adv' || s.mode==='beg') gameModeSelect.value = s.mode;
+      gameSoundChk.checked = s.sound===true;        // default: sound off
+    }
+  })();
+  function refreshSetup(){
+    gameSoundBox.hidden = gameModeSelect.value!=='beg';   // the sound switch only makes sense in beginner mode
+    renderBoard();
+  }
+  gameTempoSelect.addEventListener('change', ()=>{ saveGameSettings(); refreshSetup(); });
+  gameModeSelect.addEventListener('change', ()=>{ saveGameSettings(); refreshSetup(); });
+  gameSoundChk.addEventListener('change', saveGameSettings);
+  gameStartBtn.addEventListener('click', startGame);
+  gameAbortBtn.addEventListener('click', abortGame);
+  playAgainBtn.addEventListener('click', ()=>{ game.phase = 'idle'; showGameView('setup'); setNote(''); setMsg(''); });
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) abortGame(); });   // timing is meaningless in the background
+  refreshSetup();
+
+  function refreshGameTexts(){
+    setStatus(game.statusKey);
+    setMsg(game.msgKey);
+    setNote(game.noteKey);
+    renderBoard();
+    if(game.phase==='result') renderResult();
+  }
 
   /* ---------- App shell integration (added for merged app) ---------- */
   window.addEventListener('message', (e)=>{
@@ -595,6 +1471,7 @@
     }
     if(d.type === 'app:pause'){
       if(playing) stopMetronome();
+      abortGame();
       releaseWakeLock();
     }
     if(d.type === 'app:resume'){
